@@ -1,20 +1,24 @@
 import { createRouter, createWebHistory } from "vue-router";
-import Browse from "../views/Browse/Browse.vue";
+import Browse from "../views/Browse";
+import Watch from "../views/Watch";
 
 const routes = [
   {
     path: "/",
     name: "Home",
-    redirect: "/browse"
+    redirect: "/browse",
   },
   {
     path: "/browse",
     name: "Browse",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
     component: Browse,
   },
+  {
+    path: "/watch/:mi",
+    name: "Watch",
+    component: Watch,
+    props: true,
+  }
 ];
 
 const router = createRouter({
