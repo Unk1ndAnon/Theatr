@@ -303,6 +303,7 @@ a {
     right: 0;
     bottom: 0;
     width: 100%;
+    z-index: -1;
 
     .fallback-text {
       box-sizing: border-box;
