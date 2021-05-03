@@ -3,7 +3,8 @@
     <swiper v-bind="swiperOptions" v-if="list">
       <swiper-slide
         v-for="movie in list.splice(0, config.maxPanes || list.length)"
-        :key="movie.id">
+        :key="movie.id"
+      >
         <Pane :info="movie" />
       </swiper-slide>
     </swiper>
@@ -38,10 +39,8 @@ export default {
         return {
           class: "billboard-presentation-container", // useless, remove.
           loop: true,
-          autoplayOptions: {
-            delay: 2000,
-          },
-          //allowTouchMove: false,
+          lazy: true,
+          allowTouchMove: false,
           preloadImages: true,
           slidesPerView: 1,
         };
@@ -54,15 +53,15 @@ export default {
   },
   methods: {
     test() {
-      console.log('fired');
-    }
+      console.log("fired");
+    },
   },
   data() {
     return {
       list: null,
     };
   },
-  created() {
+  mounted() {
     this.$props.promise.then((r) => {
       this.list = r.data.results;
     });

@@ -1,4 +1,4 @@
-import { axios, cache } from "../axios";
+import { axios, cache } from "./axios";
 
 const _api = axios.create({
   adapter: cache.adapter,
@@ -9,7 +9,7 @@ const _api = axios.create({
   },
 });
 
-function search(
+export function search(
   query,
   ep = "",
   season = "",
@@ -24,5 +24,3 @@ function search(
     params: params,
   });
 }
-
-export { search };

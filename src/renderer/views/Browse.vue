@@ -16,7 +16,7 @@ export default {
   methods: {
     playMedia(e) {
       console.log(e);
-    }
+    },
   },
   name: "Home",
 };
