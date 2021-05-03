@@ -17,9 +17,10 @@
 </template>
 
 <script>
-import { getDetails } from "../api/tmdb";
+import { MEDIA, getDetails, getEpisodes } from "../api/tmdb";
 import { getFanArt } from "../api/fanart";
 import { search } from "../api/jackett";
+
 import videojs from "video.js";
 import "video.js/dist/video-js.css";
 
@@ -34,11 +35,12 @@ export default {
       current_backdrop: 0,
       backdrop_interval: null,
       details: null,
+      episodes: {},
       fanart: null,
       sources: null,
       source: null,
       loading: true,
-      client: new WebTorrent(),
+      client: null,
       torrent: null,
       player: null,
       blob: null,
@@ -78,16 +80,63 @@ export default {
       const imdb_id = this.details.imdb_id || this.mi[1];
       const nameOrTitle = this.details.title || this.details.name || this.mi[3];
 
-      search(imdb_id /* IMDB */ || nameOrTitle /* Title or name */)
+      var match = null;
+      var s = null;
+      var e = null;
+
+      if (this.getMediaType == MEDIA.Show) {
+        match = this.mi[5].match(/s(\d+)e(\d+)/);
+        s = match[1];
+        e = match[2];
+      }
+      search(imdb_id || nameOrTitle, s, e)
         .then((r) => {
           // Parse XML and convert to a JS Object
           const xml2js = require("xml2js").parseString;
           xml2js(r.data, (e, d) => {
             if (d.rss.channel[0].item) {
-              // `item` object is defined, meaning there are results.
-              // Save the result items and update the status
-              this.sources = d.rss.channel[0].item;
-              this.source = this.sources[0].link.toString();
+              const items_restructured = d.rss.channel[0].item.map((o) => {
+                var restructured = {};
+
+                restructured.title = o.title.toString();
+                restructured.source_type = o.link
+                  .toString()
+                  .startsWith("magnet:")
+                  ? "magnet"
+                  : "http";
+                restructured.source = o.link.toString();
+                restructured.size = o.size[0];
+                restructured.quality =
+                  o.title
+                    .toString()
+                    .match(
+                      /[^A-Za-z0-9](2160|1080|720|480|360|4K)?p[^A-Za-z0-9]/i
+                    ) || "Unknown";
+                restructured.rip =
+                  o.title
+                    .toString()
+                    .match(
+                      /[^A-Za-z0-9](BLURAY|B|BD|WEB|HD|HDTV|HC|DVD|SCR|CAM|TC|TS?[\s-][RIP|DL|MUX|SCR|CAM])[^A-Za-z0-9]/i
+                    ) || "Unknown";
+                restructured.features = o.title
+                  .toString()
+                  .match(
+                    /[^A-Za-z0-9](HDR|6CH|ATMO?S|5[\\.\s]1)[^A-Za-z0-9]/gi
+                  );
+                restructured.seeders = o["torznab:attr"].find(
+                  (i) => i.$.name == "seeders"
+                ).$.value;
+                restructured.peers = o["torznab:attr"].find(
+                  (i) => i.$.name == "peers"
+                ).$.value;
+
+                return restructured;
+              });
+
+              this.sources = items_restructured.sort(
+                (a, b) => b.seeders - a.seeders
+              );
+              this.source = this.sources.find((s) => s.source_type == "magnet"); // Find first magnet
 
               this.setStatus(
                 `Found ${this.sources.length} sources by search "${
@@ -128,7 +177,7 @@ export default {
 
           // TODO some fanart names are different than the names returned from TMDb
           // TODO write an algorithm to determine similarity between two title names (thresholded)
-          if (fanartResults) {
+          if (fanartResults[0]) {
             getFanArt(fanartResults[0].id, this.getMediaType).then((r) => {
               this.fanart = r.data;
 
@@ -167,6 +216,7 @@ export default {
       this.mi[3] = decodeURIComponent(this.mi[3]); // title is double-uri-encoded
 
       this.setStatus("Fetching details...");
+
       getDetails(this.mi[0], this.mi[2], {
         append_to_response: "images",
         language: "",
@@ -179,6 +229,25 @@ export default {
           })
         );
       });
+
+      if (this.mi[2] == MEDIA.Show) {
+        if (this.mi[5]) {
+          const matches = this.mi[5].match(/s(\d+)e(\d+)/);
+          const s = matches[1];
+          const e = matches[2];
+
+          getEpisodes(this.mi[0], s, e, {
+            append_to_response: "images,videos",
+          }).then((r) => {
+            if (!this.episodes[s]) this.episodes[s] = {};
+            this.episodes[s][e] = r.data;
+
+            if (r.data.images.stills.length > 0) {
+              this.backdrops.push(...r.data.images.stills);
+            }
+          });
+        }
+      }
     },
     renderVideo() {
       this.setStatus("Loading movie...");
@@ -194,8 +263,9 @@ export default {
         console.log("client", t);
       });
 
-      console.log("Adding", this.source);
-      client.add(this.source, (t) => {
+      console.log("Playing", this.source.source);
+
+      client.add(this.source.source, (t) => {
         t.on("infohash", () => {
           console.log("torrent", "infohash");
         });
@@ -216,9 +286,16 @@ export default {
         });
 
         // TODO support multiple video and audio codecs (mkv avi m4v...)
-        var f = t.files.find((f) => {
-          return f.name.endsWith(".mp4");
-        });
+        var f = t.files.find((f) => f.name.endsWith(".mp4") || f.name.endsWith(".mkv") );
+        this.source.mime_type = () => {
+          switch(f) {
+            case f.name.endsWith(".mp4"):
+              return "video/mp4";
+            
+            case f.name.endsWith("mkv"):
+              return "video/x-matroska";
+          }
+        }
 
         if (f) {
           this.player = videojs(
@@ -236,7 +313,7 @@ export default {
           setTimeout(() => {
             console.log(this.blob);
             this.player.cache_.source = {
-              type: "video/mp4",
+              type: this.source.mime_type,
               src: this.blob,
             };
 

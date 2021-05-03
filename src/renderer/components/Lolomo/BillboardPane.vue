@@ -2,11 +2,12 @@
   <div class="billboard-pane">
     <div class="fill-container">
       <div class="info">
-        <div class="logo-and-text">
+        <div class="logo-and-text" v-if="this.details">
           <div class="title-wrapper">
             <div class="billboard-title">
               <img
                 class="title-logo"
+                v-if="getLogo()"
                 v-bind:src="getLogo()"
                 v-bind:alt="info.title || info.name"
               />
@@ -65,7 +66,7 @@ export default {
     details: ["fetchFanArt"],
   },
   computed: {
-    mediaType() {
+    getMediaType() {
       return (
         this.$props.info.media_type ||
         (this.$props.info.title ? MEDIA.Movie : MEDIA.Show)
@@ -168,7 +169,7 @@ export default {
       });
     },
   },
-  created() {
+  mounted() {
     this.fetchDetails();
   },
 };

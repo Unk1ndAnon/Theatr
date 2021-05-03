@@ -38,6 +38,7 @@ export default {
       backdrop: null,
       details: null,
       seasons: {},
+      selectedEpisode: null,
       fanart: null,
       isLoading: true,
       isMouseOver: false,
@@ -93,8 +94,25 @@ export default {
         ]).replace(/\//g, ".")
       );
     },
+    getEncodedInfoForEpisode() {
+      const episode = this.selectedEpisode || this.seasons[1].episodes[0];
+      return encodeURIComponent(
+        btoa([
+          this.$props.info.id,
+          null,
+          this.getMediaType,
+          encodeURIComponent(episode.name),
+          episode.air_date,
+          `s${episode.season_number}e${episode.episode_number}`,
+        ]).replace(/\//g, ".")
+      );
+    },
     getWatchLink() {
-      return `/watch/${this.getEncodedInfo}`;
+      if (this.getMediaType == MEDIA.Show) {
+        return `/watch/${this.getEncodedInfoForEpisode}`;
+      } else { 
+        return `/watch/${this.getEncodedInfo}`;
+      }
     },
     areDetailsLoaded() {
       return this.details != null;
@@ -109,10 +127,10 @@ export default {
       console.log("Fanart", this.fanart);
     },
     onClick() {
+      this.debug();
       this.$router.push(this.getWatchLink);
     },
     onMouseEnter() {
-      console.log(this.backdropPath);
       this.isMouseOver = true;
 
       setTimeout(() => {
@@ -129,6 +147,12 @@ export default {
       })
         .then((r) => {
           this.details = r.data;
+
+          if (this.getMediaType == MEDIA.Show) {
+            r.data.seasons.forEach((s) => {
+              this.loadSeasonEpisodes(s.season_number);
+            })
+          }
 
           // Sort backdrops by vote_count (vote_average as returned by API)
           const backdrops = r.data.images.backdrops.sort(
@@ -151,13 +175,11 @@ export default {
           console.error("Error", e);
         });
     },
-    loadSeasonEpisodes(season) {
+    loadSeasonEpisodes(season_number) {
       // Get basic episode details
-      getEpisodes(this.$props.info.id, season, null, {
-        append_to_response: "images,videos",
-      }).then((r) => {
+      getEpisodes(this.$props.info.id, season_number, null).then((r) => {
         // Add to this.seasons array under season number as key
-        this.seasons[season] = r.data;
+        this.seasons[season_number] = r.data;
       });
     },
     loadFanArt() {
