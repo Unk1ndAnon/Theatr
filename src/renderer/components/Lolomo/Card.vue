@@ -228,20 +228,20 @@ export default {
     handleVisiChange() {
       if (this.$props.visible && !this.details) {
         // Get movie/tv details
-        //this.fetchDetails();
+        this.fetchDetails();
       }
     },
   },
   created() {
     if (this.$props.visible) {
       // Get movie/tv details
-      //this.fetchDetails();
+      this.fetchDetails();
     }
 
     setTimeout(() => {
       if (!this.backdropPath && !this.details) {
         // Force stop loading
-        //this.stopLoading();
+        this.stopLoading();
       }
     }, 8000);
   },
@@ -262,6 +262,7 @@ a {
     position: relative;
     width: 100%;
     height: 0;
+    overflow: hidden;
   }
 
   .boxart-size-7x10 {
@@ -287,6 +288,7 @@ a {
 
   img.boxart-image {
     object-fit: cover;
+    border: 0;
     height: 100%;
     width: 100%;
     z-index: 1;
@@ -300,7 +302,7 @@ a {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: -1;
+    width: 100%;
 
     .fallback-text {
       box-sizing: border-box;
@@ -321,13 +323,13 @@ a {
 
   @keyframes Pulse {
     0% {
-      background: #303030;
+      background-color: #303030;
     }
     50% {
-      background: #454545;
+      background-color: #454545;
     }
     100% {
-      background: #303030;
+      background-color: #303030;
     }
   }
 
