@@ -121,7 +121,7 @@ export default {
                 restructured.features = o.title
                   .toString()
                   .match(
-                    /[^A-Za-z0-9](HDR|6CH|ATMO?S|5[\\.\s]1)[^A-Za-z0-9]/gi
+                    /[^A-Za-z0-9](HDR|6CH|ATMO?S|5[\\.\s]1|DUBBED)[^A-Za-z0-9]/gi
                   );
                 restructured.seeders = o["torznab:attr"].find(
                   (i) => i.$.name == "seeders"
@@ -263,7 +263,7 @@ export default {
         console.log("client", t);
       });
 
-      console.log("Playing", this.source.source);
+      console.log("Adding", this.source.source);
 
       client.add(this.source.source, (t) => {
         t.on("infohash", () => {
@@ -286,18 +286,12 @@ export default {
         });
 
         // TODO support multiple video and audio codecs (mkv avi m4v...)
-        var f = t.files.find((f) => f.name.endsWith(".mp4") || f.name.endsWith(".mkv") );
-        this.source.mime_type = () => {
-          switch(f) {
-            case f.name.endsWith(".mp4"):
-              return "video/mp4";
-            
-            case f.name.endsWith("mkv"):
-              return "video/x-matroska";
-          }
-        }
+        var f = t.files.find((f) => f.name.endsWith(".mp4") );
+        this.source.mime_type = "video/mp4";
 
         if (f) {
+          this.setStatus("Initializing video player");
+
           this.player = videojs(
             this.$refs.video.getAttribute("id"),
             {
@@ -309,9 +303,8 @@ export default {
             }
           );
 
-          // I don't know why, but it makes things work.
           setTimeout(() => {
-            console.log(this.blob);
+            this.setStatus("Setting player blob");
             this.player.cache_.source = {
               type: this.source.mime_type,
               src: this.blob,
@@ -320,7 +313,9 @@ export default {
             this.client = client;
             this.torrent = t;
 
-            //this.$refs.backdropElement.classList.remove("pan");
+            this.setStatus("Streaming");
+
+            // Begin background fade
             this.$refs.backdropElement.classList.add("hidden", "fade");
 
             setTimeout(() => {
