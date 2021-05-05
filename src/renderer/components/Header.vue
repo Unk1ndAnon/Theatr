@@ -78,6 +78,7 @@ export default {
   padding: 0;
   width: 100%;
   z-index: 4;
+  background: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5004202364539565) 30%, rgba(0,0,0,0) 90%);
 
   .ph-container {
     background-color: transparent;
@@ -110,6 +111,8 @@ export default {
         a {
           text-decoration: none;
           color: lightgray;
+
+          transition: color 0.2s;
         }
         a:hover {
           color: gray;
