@@ -5,7 +5,6 @@
       v-for="lom in loms"
       :key="lom.name"
       v-bind="lom"
-      @media-play="playMedia"
     />
   </div>
 </template>
@@ -14,19 +13,51 @@
 import Billboard from "./Billboard";
 import Lom from "./Lom";
 
-import { MEDIA, WINDOW, trending, discover, multi } from "../../api/tmdb";
+import {
+  MEDIA,
+  WINDOW,
+  trending,
+  discover,
+  multi,
+  movies_now_playing,
+} from "../../api/tmdb";
 
 import "./Lolomo.scss";
 
 export default {
   components: { Billboard, Lom },
   name: "Lolomo",
-  methods: {
-    playMedia(e) {
-      this.$emit("media-play", e);
-    },
-  },
+  methods: {},
+  computed: {},
   data() {
+    const swiperDefaults = {
+      loop: false,
+      lazy: true,
+      spaceBetween: 4,
+      slidesOffsetBefore: 16,
+      slidesOffsetAfter: 16,
+      watchSlidesVisibility: true,
+      autoHeight: true,
+      breakpoints: {
+        320: {
+          slidesPerView: 2,
+          slidesPerGroup: 2,
+        },
+        480: {
+          slidesPerView: 3,
+          slidesPerGroup: 3,
+        },
+        640: {
+          slidesPerView: 4,
+          slidesPerGroup: 4,
+        },
+        1280: {
+          slidesPerView: 5,
+          slidesPerGroup: 5,
+        },
+      },
+    };
+
     return {
       // Configuration
       billboard: {
@@ -37,10 +68,12 @@ export default {
         {
           listName: "New Releases",
           promise: discover(MEDIA.Movie, {}),
+          swiperOptions: swiperDefaults,
         },
         {
           listName: "Shows to Consider",
           promise: discover(MEDIA.Show),
+          swiperOptions: swiperDefaults,
         },
         /*{
           listName: "Netflix Originals",
@@ -60,6 +93,46 @@ export default {
               "vote_count.gte": 100,
             })
           ),
+          swiperOptions: swiperDefaults,
+        },
+        {
+          listName: "Continue Watching",
+          cardOrientation: "7x10",
+          promise: movies_now_playing({
+            transformResponse: (r) => {
+              var results = r.results;
+              results = results.splice(0, 2);
+              var response = r;
+              response.results = results;
+              return response;
+            },
+          }),
+          swiperOptions: {
+            loop: false,
+            lazy: true,
+            spaceBetween: 4,
+            slidesOffsetBefore: 16,
+            slidesOffsetAfter: 16,
+            watchSlidesVisibility: true,
+            breakpoints: {
+              320: {
+                slidesPerView: 2,
+                slidesPerGroup: 2,
+              },
+              480: {
+                slidesPerView: 3,
+                slidesPerGroup: 3,
+              },
+              640: {
+                slidesPerView: 5,
+                slidesPerGroup: 5,
+              },
+              1280: {
+                slidesPerView: 6,
+                slidesPerGroup: 6,
+              },
+            },
+          },
         },
       ],
     };

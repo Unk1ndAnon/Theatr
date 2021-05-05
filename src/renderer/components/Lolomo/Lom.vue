@@ -6,7 +6,11 @@
 
     <swiper v-bind="swiperOptions">
       <swiper-slide v-for="item in list" :key="item.id" v-slot="{ isVisible }">
-        <Card :visible="isVisible" :info="item" />
+        <Card
+          :orientation="cardOrientation"
+          :visible="isVisible"
+          :info="item"
+        />
       </swiper-slide>
     </swiper>
   </div>
@@ -18,8 +22,6 @@ import Card from "./Card";
 
 //import "swiper/swiper.scss";
 //import "swiper/components/lazy/lazy.scss";
-
-//SwiperCore.use([]);
 
 export default {
   components: { Card, Swiper, SwiperSlide },
@@ -38,38 +40,15 @@ export default {
     },
     swiperOptions: {
       type: Object,
-      default: () => {
-        return {
-          loop: false,
-          lazy: true,
-          spaceBetween: 4,
-          slidesOffsetBefore: 16,
-          slidesOffsetAfter: 16,
-          watchSlidesVisibility: true,
-          breakpoints: {
-            320: {
-              slidesPerView: 2,
-              slidesPerGroup: 2,
-            },
-            480: {
-              slidesPerView: 3,
-              slidesPerGroup: 3,
-            },
-            640: {
-              slidesPerView: 4,
-              slidesPerGroup: 4,
-            },
-            1280: {
-              slidesPerView: 5,
-              slidesPerGroup: 5,
-            },
-          },
-        };
-      },
+      required: true,
     },
     promise: {
       type: Promise,
       required: true,
+    },
+    cardOrientation: {
+      type: String,
+      default: "16x9",
     },
   },
   methods: {
@@ -87,6 +66,7 @@ export default {
     };
   },
   created() {
+    console.log(this.$props);
     this.$props.promise.then((r) => {
       if (Array.isArray(r)) {
         var merged = [];
@@ -97,6 +77,7 @@ export default {
           merged = [...merged, ...o.data.results];
         });
 
+        // Sort by vote_average
         merged = merged.sort((a, b) => b.vote_average - a.vote_average);
 
         this.list = merged;
