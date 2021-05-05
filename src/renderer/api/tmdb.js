@@ -51,8 +51,8 @@ export function getDetails(
   return _api.get(`/${media_type}/${id}`, { params: params, data: data });
 }
 
-export function movies_now_playing(params = {}, data = {}) {
-  return _api.get(`/movie/now_playing`, { params: params, data: data });
+export function movies_now_playing(options = {}) {
+  return _api.get(`/movie/now_playing`, options);
 }
 
 export function discover(media_type = MEDIA.Movie, params = {}, data = {}) {

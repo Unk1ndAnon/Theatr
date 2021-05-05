@@ -43,6 +43,10 @@ export default {
           allowTouchMove: false,
           preloadImages: true,
           slidesPerView: 1,
+          autoplay: {
+            delay: 1000,
+            disableOnInteraction: true,
+          },
         };
       },
     },
