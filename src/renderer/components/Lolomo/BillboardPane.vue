@@ -7,9 +7,8 @@
             <div class="billboard-title">
               <img
                 class="title-logo"
-                v-if="getLogo()"
-                v-bind:src="getLogo()"
-                v-bind:alt="info.title || info.name"
+                :src="getLogo()"
+                :alt="info.title || info.name"
               />
             </div>
           </div>
