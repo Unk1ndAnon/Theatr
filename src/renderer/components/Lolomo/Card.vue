@@ -1,11 +1,19 @@
 <template>
   <a @click="onClick" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
-    <div :class="`boxart boxart-rounded boxart-size-16x9 ${visibilityClass}`">
+    <div
+      :class="`boxart boxart-rounded boxart-size-${getOrientation} ${visibilityClass}`"
+    >
       <img
         v-if="backdropPath && !isLoading"
         class="boxart-image boxart-image-in-padded-container"
         :src="backdropPath"
       />
+
+      <div class="overlay-container" v-if="overlayDetails">
+        <div class="progress-bar">
+          <progress value="10" max="100" />
+        </div>
+      </div>
 
       <div
         class="fallback-text-container"
@@ -32,11 +40,16 @@ export default {
       type: Object,
       required: true,
     },
+    orientation: {
+      type: String,
+      required: true,
+    },
   },
   data() {
     return {
       backdrop: null,
       details: null,
+      overlayDetails: null,
       seasons: {},
       selectedEpisode: null,
       fanart: null,
@@ -59,12 +72,24 @@ export default {
     getMediaType() {
       return this.$props.info.title ? MEDIA.Movie : MEDIA.Show;
     },
+    getOrientation() {
+      return this.$props.orientation || "16x9";
+    },
     fallbackBackdropStyle() {
       const linearGradient = "linear-gradient(rgba(0,0,0,0),#000)";
+
       return this.isLoading
         ? "none"
-        : this.$props.info.backdrop_path
-        ? `url(https://image.tmdb.org/t/p/w500${this.$props.info.backdrop_path})`
+        : (
+            this.getOrientation == "16x9"
+              ? this.$props.info.backdrop_path
+              : this.$props.info.poster_path
+          )
+        ? `url(https://image.tmdb.org/t/p/w500${
+            this.getOrientation == "16x9"
+              ? this.$props.info.backdrop_path
+              : this.$props.info.poster_path
+          })`
         : linearGradient;
     },
     backdropPath: {
@@ -110,7 +135,7 @@ export default {
     getWatchLink() {
       if (this.getMediaType == MEDIA.Show) {
         return `/watch/${this.getEncodedInfoForEpisode}`;
-      } else { 
+      } else {
         return `/watch/${this.getEncodedInfo}`;
       }
     },
@@ -151,13 +176,14 @@ export default {
           if (this.getMediaType == MEDIA.Show) {
             r.data.seasons.forEach((s) => {
               this.loadSeasonEpisodes(s.season_number);
-            })
+            });
           }
 
           // Sort backdrops by vote_count (vote_average as returned by API)
-          const backdrops = r.data.images.backdrops.sort(
-            (a, b) => b.vote_count - a.vote_count
-          );
+          const backdrops = (this.getOrientation == "16x9"
+            ? r.data.images.backdrops
+            : r.data.images.posters
+          ).sort((a, b) => b.vote_count - a.vote_count);
 
           if (backdrops) {
             // Find backdrops in user language
@@ -189,7 +215,7 @@ export default {
         this.details.release_date ||
         this.details.first_air_date ||
         this.$props.info.release_date ||
-        this.$props.info.first_air_date;
+        this.$props.info.first_air_date || "";
 
       ipcRenderer.once(`fanarttv-scrape-${this.id}`, (e, data) => {
         var fanartResults = JSON.parse(data);
@@ -198,7 +224,7 @@ export default {
           return m.year == releaseDate.split("-")[0];
         });
 
-        // TODO sort the fanartResults array by imageCount (in case of multiple results for year)
+        // sort the fanartResults array by imageCount (in case of multiple results for year)
         fanartResults = fanartResults.sort(
           (a, b) => b.imageCount - a.imageCount
         );
@@ -211,7 +237,9 @@ export default {
               this.fanart = r.data;
 
               var backgrounds =
-                r.data.moviebackgrounds || r.data.showbackgrounds || null;
+                (this.getOrientation == "16x9"
+                  ? r.data.moviebackgrounds || r.data.showbackgrounds
+                  : r.data.movieposter || r.data.tvposter) || null;
 
               if (backgrounds) {
                 var backgroundsInLang = backgrounds.filter(
@@ -224,13 +252,7 @@ export default {
               }
             })
             .catch((e) => {
-              console.error(
-                "Fanart",
-                this.id,
-                fanartResults[0].id,
-                fanartResults,
-                e
-              );
+              
             });
         }
       });
@@ -288,11 +310,11 @@ a {
   }
 
   .boxart-size-7x10 {
-    padding-top: 70%;
+    padding: 70% 0; // 7x10 aspect ratio padding hack
   }
 
   .boxart-size-16x9 {
-    padding-top: 56.25%;
+    padding: 28.125% 0; // 16x9 aspect ratio padding hack
   }
 
   .boxart-rounded {
@@ -314,6 +336,46 @@ a {
     height: 100%;
     width: 100%;
     z-index: 1;
+  }
+
+  .overlay-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+
+    .progress-bar {
+      position: absolute;
+      width: 96%;
+      bottom: 2%;
+      left: 2%;
+      right: 2%;
+
+      progress {
+        appearance: none;
+        border: none;
+        height: 0.5em;
+        width: 100%;
+      }
+
+      progress[value] {
+        appearance: none;
+      }
+
+      progress::-webkit-progress-bar {
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
+        border-radius: 2px;
+      }
+
+      progress[value]::-webkit-progress-value {
+        background: red;
+        border-radius: 2px;
+      }
+    }
   }
 
   .fallback-text-container {

@@ -40,7 +40,7 @@ export default {
           class: "billboard-presentation-container", // useless, remove.
           loop: true,
           lazy: true,
-          allowTouchMove: false,
+          allowTouchMove: true,
           preloadImages: true,
           slidesPerView: 1,
           autoplay: {

@@ -3,7 +3,9 @@ import {
   createWebHashHistory,
   createWebHistory,
 } from "vue-router";
-import Browse from "../views/Browse";
+
+import Browse from "../views/Browse/Browse.vue";
+import Search from "../views/Search";
 import Watch from "../views/Watch";
 
 const routes = [
@@ -13,9 +15,16 @@ const routes = [
     redirect: "/browse",
   },
   {
-    path: "/browse",
+    path: "/browse/:section?",
     name: "Browse",
     component: Browse,
+    params: true,
+  },
+  {
+    path: "/search/:searchQuery",
+    name: "Search",
+    component: Search,
+    params: true,
   },
   {
     path: "/watch/:mi",

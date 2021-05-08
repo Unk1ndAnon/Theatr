@@ -1,141 +1,58 @@
 <template>
-  <Billboard v-bind="billboard" />
-  <div class="lom-container">
-    <Lom
-      v-for="lom in loms"
-      :key="lom.name"
-      v-bind="lom"
-    />
+  <Billboard v-if="config.billboard" v-bind="config.billboard" />
+
+  <div class="lom-container" v-if="config.loms">
+    <Lom v-for="lom in config.loms" :key="lom.name" v-bind="lom" />
   </div>
+
 </template>
 
 <script>
 import Billboard from "./Billboard";
 import Lom from "./Lom";
-
-import {
-  MEDIA,
-  WINDOW,
-  trending,
-  discover,
-  multi,
-  movies_now_playing,
-} from "../../api/tmdb";
-
 import "./Lolomo.scss";
+import { search } from "../../api/tmdb";
 
 export default {
-  components: { Billboard, Lom },
+  components: { Billboard, Lom, },
   name: "Lolomo",
-  methods: {},
+  props: {
+    section: {
+      type: String,
+      required: false,
+    },
+  },
+  methods: {
+    setOptions() {
+      this.config = this.getSectionExports(this.$props.section);
+      if (this.$props.section == "search") {
+        this.config.loms[0].promise = search(this.$route.params.searchQuery);
+      }
+    },
+    getSectionExports(section) {
+      switch (section) {
+        case "movies":
+          return require("../../views/Browse/movies.js").default;
+        case "tv":
+          return require("../../views/Browse/tvshows.js").default;
+        case "search":
+          return require("../../views/Browse/search.js").default;
+        default:
+          return require("../../views/Browse/default.js").default;
+      }
+    },
+  },
   computed: {},
   data() {
-    const swiperDefaults = {
-      loop: false,
-      lazy: true,
-      spaceBetween: 4,
-      slidesOffsetBefore: 16,
-      slidesOffsetAfter: 16,
-      watchSlidesVisibility: true,
-      autoHeight: true,
-      breakpoints: {
-        320: {
-          slidesPerView: 2,
-          slidesPerGroup: 2,
-        },
-        480: {
-          slidesPerView: 3,
-          slidesPerGroup: 3,
-        },
-        640: {
-          slidesPerView: 4,
-          slidesPerGroup: 4,
-        },
-        1280: {
-          slidesPerView: 5,
-          slidesPerGroup: 5,
-        },
-      },
-    };
-
     return {
-      // Configuration
-      billboard: {
-        promise: trending(WINDOW.Week),
-      },
-
-      loms: [
-        {
-          listName: "New Releases",
-          promise: discover(MEDIA.Movie, {}),
-          swiperOptions: swiperDefaults,
-        },
-        {
-          listName: "Shows to Consider",
-          promise: discover(MEDIA.Show),
-          swiperOptions: swiperDefaults,
-        },
-        /*{
-          listName: "Netflix Originals",
-          promise: multi(
-            discover(MEDIA.Movie, { with_networks: 213, sort_by: "popularity.asc" }),
-            discover(MEDIA.Show, { with_networks: 213, sort_by: "popularity.asc" }),
-          ),
-        },*/
-        {
-          listName: "Top-Rated Anime",
-          promise: multi(
-            discover(MEDIA.Show, {
-              with_genre: 16,
-              with_origin_country: "JP",
-              "air_date.gte": "2020-04-28",
-              "air_date.lte": "2021-04-28",
-              "vote_count.gte": 100,
-            })
-          ),
-          swiperOptions: swiperDefaults,
-        },
-        {
-          listName: "Continue Watching",
-          cardOrientation: "7x10",
-          promise: movies_now_playing({
-            transformResponse: (r) => {
-              var results = r.results;
-              results = results.splice(0, 2);
-              var response = r;
-              response.results = results;
-              return response;
-            },
-          }),
-          swiperOptions: {
-            loop: false,
-            lazy: true,
-            spaceBetween: 4,
-            slidesOffsetBefore: 16,
-            slidesOffsetAfter: 16,
-            watchSlidesVisibility: true,
-            breakpoints: {
-              320: {
-                slidesPerView: 2,
-                slidesPerGroup: 2,
-              },
-              480: {
-                slidesPerView: 3,
-                slidesPerGroup: 3,
-              },
-              640: {
-                slidesPerView: 5,
-                slidesPerGroup: 5,
-              },
-              1280: {
-                slidesPerView: 6,
-                slidesPerGroup: 6,
-              },
-            },
-          },
-        },
-      ],
+      config: null,
     };
+  },
+  created() {
+    this.setOptions();
+  },
+  updated() {
+    this.setOptions();
   },
 };
 </script>

@@ -36,7 +36,7 @@
     </div>
     <div class="image-wrapper">
       <img
-        :src="'https://images.tmdb.org/t/p/w1280' + info.backdrop_path"
+        :src="'https://images.tmdb.org/t/p/original' + info.backdrop_path"
         :alt="info.title"
       />
     </div>
@@ -89,12 +89,19 @@ export default {
     getLogo() {
       if (this.fanart == null) return null;
 
-      if (this.fanart.hdmovielogo.length > 0) {
-        let englishLogos = this.fanart.hdmovielogo.filter((l) => {
-          return l.lang == "en";
-        });
+      const hdlogos =
+        this.fanart.hdmovielogo ||
+        this.fanart.hdtvlogo ||
+        this.fanart.hdclearlogo;
 
-        return englishLogos[0].url;
+      if (hdlogos) {
+        if (hdlogos.length > 0) {
+          let englishLogos = hdlogos.filter((l) => {
+            return l.lang == "en";
+          });
+
+          return englishLogos[0].url;
+        }
       }
 
       return null;
@@ -115,13 +122,21 @@ export default {
                 // TODO Scrape
                 const { ipcRenderer } = require("electron");
 
-                const releaseDate = this.details.release_date || this.details.first_air_date;
+                const releaseDate =
+                  this.details.release_date || this.details.first_air_date;
 
                 ipcRenderer.once(`fanarttv-scrape-${this.id}`, (e, data) => {
                   var fanartResults = JSON.parse(data);
 
                   fanartResults = fanartResults.filter((m) => {
-                    return m.year == releaseDate.split("-")[0];
+                    if (m.year > 0) {
+                      // if year exists in fanart response
+                      return m.year == releaseDate.split("-")[0];
+                    }
+                  });
+
+                  fanartResults = fanartResults.sort((a, b) => {
+                    b.imageCount - a.imageCount;
                   });
 
                   // TODO sort the fanartResults array by imageCount (in case of multiple results for year)

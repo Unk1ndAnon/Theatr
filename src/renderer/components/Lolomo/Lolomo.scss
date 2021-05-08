@@ -72,7 +72,8 @@
 
 div.lom-container {
     position: absolute;
-    left: 0; right: 0; top: 42.25vw;
+    left: 0; right: 0;
+    padding: 0 16px 16px 16px;
 
     div.lom-row {
         position: relative;

@@ -2,7 +2,7 @@
   <div class="browse">
     <Header />
     <div class="browse-container">
-      <Lolomo @media-play="playMedia" />
+      <Lolomo :section="'search'" />
     </div>
   </div>
 </template>
@@ -12,13 +12,8 @@ import Header from "../components/Header";
 import Lolomo from "../components/Lolomo/Lolomo";
 
 export default {
-  components: { Header, Lolomo },
-  methods: {
-    playMedia(e) {
-      console.log(e);
-    },
-  },
   name: "Home",
+  components: { Header, Lolomo },
 };
 </script>
 

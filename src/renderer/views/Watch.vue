@@ -420,6 +420,7 @@ export default {
     height: 100%;
 
     video.vjs-tech {
+      outline: 0;
     }
   }
 
@@ -465,7 +466,7 @@ export default {
   }
 
   .pan {
-    animation: Pan 60s ease 0s infinite;
+    animation: Pan 60s ease-out 0s infinite;
   }
 }
 </style>

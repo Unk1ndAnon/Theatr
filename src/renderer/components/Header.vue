@@ -45,8 +45,7 @@ export default {
   name: "Header",
   methods: {
     search() {
-      console.log("Searching", this.searchField);
-      this.$emit("search", this.searchField);
+      this.$router.push(`/search/${this.searchField}`);
     },
     windowScrolled() {
       this.pageYOffset = window.pageYOffset;
@@ -54,7 +53,7 @@ export default {
   },
   data() {
     return {
-      searchField: "",
+      searchField: this.$route.params.searchQuery || "",
       pageYOffset: window.pageYOffset,
     };
   },
