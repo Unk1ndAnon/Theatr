@@ -3,7 +3,7 @@ import { axios, cache } from "./axios";
 const _api = axios.create({
   adapter: cache.adapter,
   baseURL: "https://api.tmdb.org/3/",
-  timeout: 8000,
+  timeout: 15000,
   params: {
     api_key: "205c5906f1be7842b0bf97875e23f54c",
     language: "en",
