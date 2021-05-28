@@ -5,12 +5,15 @@ import {
   discover,
   multi,
   movies_now_playing,
+  stringToTMDB,
 } from "../../api/tmdb";
-require("../../api/trakt");
+import Trakt, { TraktAPI } from "../../api/trakt";
+import store from "../../store";
 
 const swiperDefaults = {
   loop: false,
   lazy: true,
+  allowTouchMove: false,
   spaceBetween: 4,
   watchSlidesVisibility: true,
   breakpoints: {
@@ -30,51 +33,123 @@ const swiperDefaults = {
       slidesPerView: 5,
       slidesPerGroup: 5,
     },
+    1440: {
+      slidesPerView: 6,
+      slidesPerGroup: 6,
+    },
+    1920: {
+      slidesPerView: 7,
+      slidesPerGroup: 7,
+      spaceBetween: 8,
+    },
+    2560: {
+      slidesPerView: 8,
+      slidesPerGroup: 8,
+      spaceBetween: 8,
+    },
   },
-}
-
+};
 
 // Section Configuration
-export default {
+const sectionConfig = {
   billboard: {
-    promise: trending(WINDOW.Week),
+    request: [
+      {
+        connector: "tmdb",
+        function: "trending",
+        args: [WINDOW.Week],
+      },
+    ],
   },
 
   loms: [
     {
       listName: "New Releases",
-      promise: discover(MEDIA.Movie, {}),
+      config: {
+        popover: true,
+      },
+      request: [
+        {
+          connector: "tmdb",
+          function: "discover",
+          args: [MEDIA.Movie],
+        },
+      ],
       swiperOptions: swiperDefaults,
     },
     {
       listName: "Shows to Consider",
-      promise: discover(MEDIA.Show),
+      request: [
+        {
+          connector: "tmdb",
+          function: "discover",
+          args: [
+            MEDIA.Show
+          ]
+        }
+      ],
+      swiperOptions: swiperDefaults,
+    },
+    {
+      listName: "test",
+      request: [
+        {
+          connector: "tmdb",
+          function: "multi",
+          args: [
+            {function: "discover"},
+            {function: "discover", args: [MEDIA.Show]}
+          ]
+        },
+      ],
       swiperOptions: swiperDefaults,
     },
     {
       listName: "Top-Rated Anime",
-      promise: discover(MEDIA.Show, {
-        with_genre: 16,
-        with_origin_country: "JP",
-        "air_date.gte": "2020-04-28",
-        "air_date.lte": "2021-04-28",
-        "vote_count.gte": 100,
-      }),
+      request: [
+        {
+          connector: "tmdb",
+          function: "discover",
+          args: [
+            MEDIA.Show,
+            {
+              params: {
+                with_genre: 16,
+                with_origin_country: "JP",
+                "air_date.gte": "2020-04-28",
+                "air_date.lte": "2021-04-28",
+                "vote_count.gte": 100,
+              },
+            },
+          ],
+        },
+      ],
       swiperOptions: swiperDefaults,
     },
     {
       listName: "Continue Watching",
-      cardOrientation: "7x10",
-      promise: movies_now_playing({
-        transformResponse: (r) => {
-          var results = r.results;
-          results = results.splice(0, 2);
-          var response = r;
-          response.results = results;
-          return response;
+      request: [
+        {
+          connector: "trakt",
+          function: "sync.playback.get",
         },
-      }),
+      ],
+      config: {
+        showProgressbar: true,
+        cardOrientation: "7x10",
+      },
       swiperOptions: swiperDefaults,
     },
+    /*{
+      listName: "Continue Watching",
+      //call: TraktAPI("sync.history.get"),
+      config: {
+        showProgressBar: true,
+        cardOrientation: "7x10",
+      },
+      swiperOptions: swiperDefaults,
+    },*/
   ],
 };
+
+export default sectionConfig;

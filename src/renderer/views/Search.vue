@@ -20,6 +20,7 @@ export default {
 <style lang="scss" scoped>
 .browse-container {
   position: relative;
+  margin-top: 70px;
   z-index: 0;
 }
 </style>

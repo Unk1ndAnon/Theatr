@@ -1,7 +1,8 @@
 <template>
   <a @click="onClick" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
     <div
-      :class="`boxart boxart-rounded boxart-size-${getOrientation} ${visibilityClass}`"
+      ref="card"
+      :class="`boxart boxart-rounded boxart-size-${getOrientation}`"
     >
       <img
         v-if="backdropPath && !isLoading"
@@ -9,9 +10,9 @@
         :src="backdropPath"
       />
 
-      <div class="overlay-container" v-if="overlayDetails">
+      <div class="overlay-container" v-if="progress">
         <div class="progress-bar">
-          <progress value="10" max="100" />
+          <progress :value="progress" max="100" />
         </div>
       </div>
 
@@ -27,53 +28,65 @@
 </template>
 
 <script>
+import { CancelToken, axios } from "../../api/axios";
 import { getFanArt } from "../../api/fanart";
 import { MEDIA, getDetails, getEpisodes } from "../../api/tmdb";
 
 export default {
   name: "Card",
   props: {
-    visible: {
-      required: true,
-    },
     info: {
       type: Object,
       required: true,
     },
-    orientation: {
-      type: String,
-      required: true,
+    config: {
+      default: {},
     },
   },
   data() {
     return {
+      sourcedFromTrakt: null,
       backdrop: null,
       details: null,
-      overlayDetails: null,
+      progress: null,
       seasons: {},
       selectedEpisode: null,
       fanart: null,
       isLoading: true,
       isMouseOver: false,
       isHovering: false,
+      cancelTokens: {
+        details: CancelToken.source(),
+        fanart: CancelToken.source(),
+      },
     };
   },
+  emits: ["card-popover"],
   watch: {
-    visible: "handleVisiChange",
-    details: ["stopLoading", "loadFanArt"], //, "loadSeasonEpisodes"],
+    details: ["loadFanArt"], //, "loadSeasonEpisodes"],
+    isHovering: ["onHover"],
   },
   computed: {
     id() {
       return this.$props.info.id;
     },
+    language() {
+      return this.$store.state.ISO639;
+    },
     getMediaTitle() {
+      if (this.sourcedFromTrakt)
+        return this.$props.info.movie.title || this.$props.info.show.title;
       return this.$props.info.title || this.$props.info.name;
     },
     getMediaType() {
+      if (this.sourcedFromTrakt) {
+        if (this.$props.info.type == "episode") return MEDIA.Show;
+        return this.$props.info.type;
+      }
       return this.$props.info.title ? MEDIA.Movie : MEDIA.Show;
     },
     getOrientation() {
-      return this.$props.orientation || "16x9";
+      return this.$props.config.cardOrientation || "16x9";
     },
     fallbackBackdropStyle() {
       const linearGradient = "linear-gradient(rgba(0,0,0,0),#000)";
@@ -103,9 +116,6 @@ export default {
           : path;
       },
     },
-    visibilityClass() {
-      return this.$props.visible ? "" : "faded";
-    },
     getEncodedInfo() {
       // URL-encoded Base64 array of strings, with forward slashes (/)
       // replaced with periods (.)
@@ -119,7 +129,7 @@ export default {
         ]).replace(/\//g, ".")
       );
     },
-    getEncodedInfoForEpisode() {
+    /*getEncodedInfoForEpisode() {
       const episode = this.selectedEpisode || this.seasons[1].episodes[0];
       return encodeURIComponent(
         btoa([
@@ -131,7 +141,7 @@ export default {
           `s${episode.season_number}e${episode.episode_number}`,
         ]).replace(/\//g, ".")
       );
-    },
+    },*/
     getWatchLink() {
       if (this.getMediaType == MEDIA.Show) {
         return `/watch/${this.getEncodedInfoForEpisode}`;
@@ -144,6 +154,19 @@ export default {
     },
   },
   methods: {
+    getAbsoluteDimensions() {
+      const ClientRect = this.$refs.card.getBoundingClientRect();
+      return {
+        // The below values needed to be adjusted for absolution.
+        top: ClientRect.top + window.scrollY,
+        left: ClientRect.left + window.scrollX,
+        bottom: ClientRect.bottom - window.scrollY,
+        right: ClientRect.right - window.scrollX,
+        // These below values are already absolute in ClientRect.
+        width: ClientRect.width,
+        height: ClientRect.height,
+      }
+    },
     debug() {
       console.log(this.getMediaTitle, this.details);
       console.log("Backdrop", this.backdrop);
@@ -162,125 +185,123 @@ export default {
         if (this.isMouseOver) this.isHovering = true;
       }, 850);
     },
+    onHover() {
+      if (this.isHovering && this.config.popover) {
+        this.$emit("card-popover", [
+          true,
+          this.getAbsoluteDimensions(),
+          this.backdropPath,
+          this.details,
+          this.fanart,
+        ]);
+      } else {
+        //this.$emit("card-popover", [false]);
+      }
+    },
     onMouseLeave() {
       this.isMouseOver = false;
       this.isHovering = false;
     },
     fetchDetails() {
-      getDetails(this.$props.info.id, this.getMediaType, {
-        append_to_response: "images,videos",
-      })
+      this.sourcedFromTrakt = this.$props.info.type ? true : false;
+
+      if (this.$props.info.progress) this.progress = this.$props.info.progress;
+
+      getDetails(
+        this.sourcedFromTrakt
+          ? this.$props.info.movie.ids.tmdb
+          : this.$props.info.id,
+        this.getMediaType,
+        {
+          params: { append_to_response: "images,videos" },
+          cancelToken: this.cancelTokens.details.token,
+        }
+      )
         .then((r) => {
           this.details = r.data;
 
-          if (this.getMediaType == MEDIA.Show) {
+          /*if (this.getMediaType == MEDIA.Show) {
             r.data.seasons.forEach((s) => {
               this.loadSeasonEpisodes(s.season_number);
             });
-          }
+          }*/
 
           // Sort backdrops by vote_count (vote_average as returned by API)
-          const backdrops = (this.getOrientation == "16x9"
-            ? r.data.images.backdrops
-            : r.data.images.posters
+          const backdrops = (
+            this.getOrientation == "16x9"
+              ? r.data.images.backdrops
+              : r.data.images.posters
           ).sort((a, b) => b.vote_count - a.vote_count);
 
           if (backdrops) {
             // Find backdrops in user language
             const backdropsInLang = backdrops.filter((i) => {
-              return i.iso_639_1 == "en";
+              return i.iso_639_1 == this.$store.state.ISO639;
             });
 
             if (backdropsInLang.length > 0) {
               this.backdropPath = backdropsInLang[0].file_path;
             }
           }
+
+          this.stopLoading();
         })
         .catch((e) => {
-          console.log(this.$props.info.id, this.getMediaType, this.$props);
-          console.error("Error", e);
+          if (axios.isCancel(e)) {
+            console.log("Cancelled");
+          } else {
+            console.log(this.$props.info.id, this.getMediaType, this.$props);
+            console.error("Error", e);
+          }
         });
     },
-    loadSeasonEpisodes(season_number) {
+    /*loadSeasonEpisodes(season_number) {
       // Get basic episode details
       getEpisodes(this.$props.info.id, season_number, null).then((r) => {
         // Add to this.seasons array under season number as key
         this.seasons[season_number] = r.data;
       });
-    },
+    },*/
     loadFanArt() {
-      const { ipcRenderer } = require("electron");
+      // Create cancel token
+      this.fanart = getFanArt(
+        this.details.imdb_id || this.details.id,
+        this.getMediaType,
+        { cancelToken: this.cancelTokens.fanart.token }
+      )
+        .then((r) => {
+          this.fanart = r.data;
 
-      const releaseDate =
-        this.details.release_date ||
-        this.details.first_air_date ||
-        this.$props.info.release_date ||
-        this.$props.info.first_air_date || "";
+          var backgrounds =
+            (this.getOrientation == "16x9"
+              ? r.data.moviebackgrounds || r.data.showbackgrounds
+              : r.data.movieposter || r.data.tvposter) || null;
 
-      ipcRenderer.once(`fanarttv-scrape-${this.id}`, (e, data) => {
-        var fanartResults = JSON.parse(data);
+          if (backgrounds) {
+            var backgroundsInLang = backgrounds.filter(
+              (i) => i.lang == this.$store.state.ISO639
+            );
 
-        fanartResults = fanartResults.filter((m) => {
-          return m.year == releaseDate.split("-")[0];
+            if (backgroundsInLang.length > 0) {
+              this.backdropPath = backgroundsInLang[0].url;
+            }
+          }
+        })
+        .catch((e) => {
+          if (axios.isCancel(e)) {
+            console.log("Cancelled");
+          } else {
+            //console.log(this.$props.info.id, this.getMediaType, this.$props);
+            //console.error("Error", e);
+          }
         });
-
-        // sort the fanartResults array by imageCount (in case of multiple results for year)
-        fanartResults = fanartResults.sort(
-          (a, b) => b.imageCount - a.imageCount
-        );
-
-        // TODO some fanart names are different than the names returned from TMDb
-        // TODO write an algorithm to determine similarity between two title names (thresholded)
-        if (fanartResults[0]) {
-          getFanArt(fanartResults[0].id, this.getMediaType)
-            .then((r) => {
-              this.fanart = r.data;
-
-              var backgrounds =
-                (this.getOrientation == "16x9"
-                  ? r.data.moviebackgrounds || r.data.showbackgrounds
-                  : r.data.movieposter || r.data.tvposter) || null;
-
-              if (backgrounds) {
-                var backgroundsInLang = backgrounds.filter(
-                  (i) => i.lang == "en"
-                );
-
-                if (backgroundsInLang.length > 0) {
-                  this.backdropPath = backgroundsInLang[0].url;
-                }
-              }
-            })
-            .catch((e) => {
-              
-            });
-        }
-      });
-
-      // Send to ipcMain, which will scrape FanArtTV (bypassing CORS) for the fanart ID
-      ipcRenderer.send(
-        `scrape-fanarttv`,
-        this.details.id || this.$props.info.id,
-        this.getMediaTitle,
-        releaseDate.split("-")[0] | "",
-        this.getMediaType === "movie" ? 3 : 1
-      );
     },
     stopLoading() {
       this.isLoading = false;
     },
-    handleVisiChange() {
-      if (this.$props.visible && !this.details) {
-        // Get movie/tv details
-        this.fetchDetails();
-      }
-    },
   },
   created() {
-    if (this.$props.visible) {
-      // Get movie/tv details
-      this.fetchDetails();
-    }
+    this.fetchDetails();
 
     setTimeout(() => {
       if (!this.backdropPath && !this.details) {
@@ -288,6 +309,10 @@ export default {
         this.stopLoading();
       }
     }, 8000);
+  },
+  beforeUnmount() {
+    this.cancelTokens.fanart.cancel("Operation canceled by lifecycle hook.");
+    this.cancelTokens.details.cancel("Operation canceled by lifecycle hook.");
   },
 };
 </script>
@@ -351,9 +376,9 @@ a {
     .progress-bar {
       position: absolute;
       width: 96%;
-      bottom: 2%;
-      left: 2%;
       right: 2%;
+      left: 2%;
+      bottom: 1%;
 
       progress {
         appearance: none;
@@ -368,12 +393,10 @@ a {
 
       progress::-webkit-progress-bar {
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
-        border-radius: 2px;
       }
 
       progress[value]::-webkit-progress-value {
         background: red;
-        border-radius: 2px;
       }
     }
   }

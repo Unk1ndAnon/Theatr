@@ -1,32 +1,73 @@
 <template>
   <Billboard v-if="config.billboard" v-bind="config.billboard" />
 
-  <div class="lom-container" v-if="config.loms">
-    <Lom v-for="lom in config.loms" :key="lom.name" v-bind="lom" />
-  </div>
+  <Lom
+    v-for="lom in config.loms"
+    :key="lom.listName"
+    v-bind="lom"
+    :bbpresent="config.billboard ? true : false"
+    @card-popover="onCardPopover($event)"
+  />
 
+  <CardPopover :options="popover" />
 </template>
 
 <script>
 import Billboard from "./Billboard";
 import Lom from "./Lom";
+import CardPopover from "./CardPopover";
 import "./Lolomo.scss";
-import { search } from "../../api/tmdb";
+import { SEARCH, search } from "../../api/tmdb";
+import { CancelToken, axios } from "../../api/axios";
 
 export default {
-  components: { Billboard, Lom, },
+  components: { Billboard, Lom, CardPopover },
   name: "Lolomo",
   props: {
     section: {
       type: String,
-      required: false,
+    },
+    searchTerm: {
+      type: String,
+      default: "",
     },
   },
+  watch: {
+    "$route.params"(to, from) {
+      this.setConfig();
+    },
+  },
+  data() {
+    return {
+      popover: [false],
+      config: null,
+      searchCancelToken: CancelToken.source(),
+    };
+  },
   methods: {
-    setOptions() {
-      this.config = this.getSectionExports(this.$props.section);
-      if (this.$props.section == "search") {
-        this.config.loms[0].promise = search(this.$route.params.searchQuery);
+    onCardPopover(e) {
+      console.log(e);
+      this.popover = e;
+    },
+    setConfig() {
+      this.config = this.getSectionExports(this.getSection);
+
+      if (this.getSection == "search") {
+        // Build the search request based on property values
+
+        this.config.loms[0].request = [
+          {
+            connector: "tmdb",
+            function: "search",
+            args: [
+              this.getSearch,
+              SEARCH.Multi,
+              {
+                cancelToken: this.searchCancelToken.token,
+              },
+            ],
+          },
+        ];
       }
     },
     getSectionExports(section) {
@@ -42,17 +83,19 @@ export default {
       }
     },
   },
-  computed: {},
-  data() {
-    return {
-      config: null,
-    };
+  computed: {
+    getSection() {
+      return this.$props.section;
+    },
+    getSearch() {
+      return this.$route.params.searchTerm || "";
+    },
   },
   created() {
-    this.setOptions();
+    this.setConfig();
   },
   updated() {
-    this.setOptions();
+    console.log("Lolomo");
   },
 };
 </script>

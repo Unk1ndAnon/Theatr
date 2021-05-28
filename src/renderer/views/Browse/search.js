@@ -2,6 +2,7 @@ import { search } from "../../api/tmdb";
 
 const swiperDefaults = {
   lazy: true,
+  allowTouchMove: false,
   spaceBetween: 10,
   slidesPerColumn: Number.MAX_SAFE_INTEGER,
   slidesPerColumnFill: "row",
@@ -13,13 +14,18 @@ const swiperDefaults = {
     640: {
       slidesPerView: 6,
     },
+    1280: {
+      slidesPerView: 8,
+    }
   },
 };
 
 export default {
   loms: [
     {
-      cardOrientation: "7x10",
+      config: {
+        cardOrientation: "7x10",
+      },
       swiperOptions: swiperDefaults,
     },
   ],

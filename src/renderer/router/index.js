@@ -21,7 +21,7 @@ const routes = [
     params: true,
   },
   {
-    path: "/search/:searchQuery",
+    path: "/search/:searchTerm?",
     name: "Search",
     component: Search,
     params: true,
