@@ -1,6 +1,7 @@
 const { ipcMain } = require("electron");
 
 import { scrapeIDs } from "../renderer/api/fanart";
+import { get_video_info } from "../renderer/api/youtube";
 
 /**
  * Scrape FanArtTV data (bypassing CORS)
@@ -24,6 +25,22 @@ ipcMain.on("scrape-fanarttv", (e, ...args) => {
 /**
  * ffmpeg
  */
-ipcMain.on("", (e, ...args) => {
+ipcMain.on("", (e, ...args) => {});
 
+/**
+ * YouTube
+ */
+ipcMain.on("yt-get-video-info", (e, ...args) => {
+  const key = args[0];
+  console.log("Scraping", key);
+
+  /*get_video_info(key)
+    .then((r) => {
+      e.reply(`yt-get-video-info-${key}`, r.data);
+    })
+    .catch((e) => {
+      console.log("Error scraping Youtube");
+      console.error(e);
+    });*/
+    
 });
