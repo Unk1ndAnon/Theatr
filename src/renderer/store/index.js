@@ -1,15 +1,33 @@
-import { createStore } from "vuex";
+import { createStore, storeKey } from "vuex";
+import createPersistedState from "vuex-persistedstate";
+import Trakt from "../api/trakt";
 
 export default createStore({
   state: {
     ISO639: "en",
-    watching: {},
+    trakt: {
+      authCode: null,
+    }
+  },
+  getters: {
+    isTraktLinked: () => {
+      return null;
+    }
   },
   mutations: {
-    setLanguage(state, l) {
+    Language(state, l) {
       state.ISO639 = l;
+    },
+    TraktAuth(state, code) {
+      state.trakt.authCode = code;
     },
   },
   actions: {},
   modules: {},
+
+  plugins: [
+    createPersistedState({
+      storage: window.sessionStorage,
+    })
+  ]
 });
