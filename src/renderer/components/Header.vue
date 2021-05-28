@@ -24,14 +24,19 @@
         </ul>
         <div class="secondary-nav">
           <div class="nav-element">
-            <div class="searchBar">
+            <ProfileImage />
+          </div>
+
+          <div class="nav-element">
+            <div class="searchBox">
               <input
                 type="text"
-                placeholder="Search"
+                placeholder="Titles, people, genres"
                 v-model="searchField"
                 target="_blank"
+                class="searchBar"
+                @input="search"
               />
-              <button @click="search" class="searchButton">O</button>
             </div>
           </div>
         </div>
@@ -41,11 +46,17 @@
 </template>
 
 <script>
+import ProfileImage from "./ProfileImage";
+
 export default {
   name: "Header",
+  components: {
+    ProfileImage,
+  },
   methods: {
     search() {
-      this.$router.push(`/search/${this.searchField}`);
+      this.searchTerm = this.searchField;
+      this.$router.replace(`/search/${this.searchTerm}`);
     },
     windowScrolled() {
       this.pageYOffset = window.pageYOffset;
@@ -53,11 +64,12 @@ export default {
   },
   data() {
     return {
-      searchField: this.$route.params.searchQuery || "",
+      searchTerm: this.$route.params.searchTerm || null,
       pageYOffset: window.pageYOffset,
     };
   },
   created() {
+    this.searchField = this.$route.params.searchTerm || "";
     window.addEventListener("scroll", this.windowScrolled);
   },
   unmounted() {
@@ -77,7 +89,12 @@ export default {
   padding: 0;
   width: 100%;
   z-index: 4;
-  background: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5004202364539565) 30%, rgba(0,0,0,0) 90%);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0.5004202364539565) 30%,
+    rgba(0, 0, 0, 0) 90%
+  );
 
   .ph-container {
     background-color: transparent;
@@ -92,6 +109,7 @@ export default {
   .main-header {
     position: relative;
     display: flex;
+    margin: 0 12px;
 
     .logo {
       margin-right: 25px;
@@ -108,6 +126,7 @@ export default {
         font-size: 1.4vh;
 
         a {
+          outline: 0;
           text-decoration: none;
           color: lightgray;
 
@@ -131,6 +150,30 @@ export default {
       right: 0;
       display: flex;
       flex-flow: row-reverse;
+
+      .nav-element {
+        display: inline-flex;
+        vertical-align: middle;
+        align-items: center;
+
+        .searchBox {
+          .searchBar {
+            background: black;
+            color: lightgray;
+            height: 1.75em;
+            border: 1px solid lightgray;
+            border-radius: 4px;
+            outline: 0;
+          }
+        }
+
+        .searchTab {
+          display: inline-block;
+          cursor: pointer;
+          border: none;
+          color: white;
+        }
+      }
     }
   }
 }
