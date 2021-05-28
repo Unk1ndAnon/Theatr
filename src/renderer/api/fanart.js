@@ -6,7 +6,7 @@ const _api = axios.create({
   baseURL: "https://webservice.fanart.tv/v3",
   timeout: 8000,
   params: {
-    api_key: "2709d6aefbf223fdce9c6d44ae1706c4",
+    api_key: "ea0312313f23defc8e4e9414261fa7af",
   },
 });
 
@@ -48,9 +48,9 @@ export function scrapeIDs(query, sect) {
   });
 }
 
-export function getFanArt(imdb_id, media_type = "movies", params) {
+export function getFanArt(imdb_id, media_type = "movies", options = {}) {
   return _api.get(
     `/${media_type == "movie" ? "movies" : media_type}/${imdb_id}`,
-    { params: params }
+    options,
   );
 }

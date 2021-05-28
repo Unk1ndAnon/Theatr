@@ -28,4 +28,6 @@ const cache = setupCache({
 
 const axios = require("axios");
 
-export { axios, cache };
+const CancelToken = axios.CancelToken;
+
+export { CancelToken, axios, cache };

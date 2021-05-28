@@ -29,46 +29,76 @@ export const SEARCH = {
   Shows: "tv",
 };
 
-export function multi(...promise) {
-  return axios.all([...promise]);
+export function stringToTMDB(name, args = []) {
+  var promises = [];
+
+  switch (name) {
+    case "multi":
+      args.forEach((req) => {
+        promises.push(stringToTMDB(req.function, req.args));
+      });
+      break;
+
+    case "search":
+      promises.push(search(...args));
+      console.log(promises[0]);
+      break;
+
+    case "getEpisodes":
+      promises.push(getEpisodes(...args));
+      break;
+
+    case "getDetails":
+      promises.push(getDetails(...args));
+      break;
+
+    case "discover":
+      promises.push(discover(...args));
+      break;
+
+    case "trending":
+      promises.push(trending(...args));
+      break;
+
+    default:
+      return null;
+  }
+  return promises.length > 1 ? multi(promises) : promises[0];
 }
 
-export function getEpisodes(id, season_number, episode_number, params = {}) {
+export function multi(promises) {
+  return axios.all(promises);
+}
+
+export function getEpisodes(id, season_number, episode_number, options) {
   return _api.get(
     `/tv/${id}/season/${season_number}${
       episode_number ? `/episode/${episode_number}` : ""
     }`,
-    { params: params }
+    options
   );
 }
 
-export function getDetails(
-  id,
-  media_type = MEDIA.Movie,
-  params = {},
-  data = {}
-) {
-  return _api.get(`/${media_type}/${id}`, { params: params, data: data });
+export function getDetails(id, media_type = MEDIA.Movie, options = {}) {
+  return _api.get(`/${media_type}/${id}`, options);
 }
 
 export function movies_now_playing(options = {}) {
   return _api.get(`/movie/now_playing`, options);
 }
 
-export function discover(media_type = MEDIA.Movie, params = {}, data = {}) {
-  return _api.get(`/discover/${media_type}`, { params: params, data: data });
+export function discover(media_type = MEDIA.Movie, options = {}) {
+  return _api.get(`/discover/${media_type}`, options);
 }
 
-export function trending(time_window = WINDOW.Week, params = {}) {
-  return _api.get(`/trending/all/${time_window}`, { params: params });
+export function trending(time_window = WINDOW.Week, options = {}) {
+  return _api.get(`/trending/all/${time_window}`, options);
 }
 
-export function search(
-  query,
-  search = SEARCH.Multi,
-  params = {
-    query: query,
-  }
-) {
-  return _api.get(`/search/${search}`, { params: params });
+export function search(query, search = SEARCH.Multi, options = {}) {
+  console.log("Searching", query);
+  return _api.get(`/search/${search}`, {
+    params: { query: query },
+    ...options,
+  });
 }
