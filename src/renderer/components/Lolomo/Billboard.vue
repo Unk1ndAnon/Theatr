@@ -1,13 +1,15 @@
 <template>
   <div class="billboard">
-    <swiper v-bind="swiperOptions" v-if="list">
-      <swiper-slide
-        v-for="movie in list.splice(0, config.maxPanes || list.length)"
-        :key="movie.id"
-      >
-        <Pane :info="movie" />
-      </swiper-slide>
-    </swiper>
+    <div class="billboard-row">
+      <swiper v-bind="swiperOptions" v-if="list">
+        <swiper-slide
+          v-for="movie in list.splice(0, config.maxPanes || list.length)"
+          :key="movie.id"
+        >
+          <Pane :info="movie" />
+        </swiper-slide>
+      </swiper>
+    </div>
   </div>
 </template>
 
@@ -15,14 +17,20 @@
 import { Swiper, SwiperSlide } from "swiper/vue";
 import Pane from "./BillboardPane";
 
-// Import Swiper styles
-import "swiper/swiper.scss";
+import { stringToTMDB } from "../../api/tmdb";
+import { TraktAPI } from "../../api/trakt";
 
 export default {
+  name: "Billboard",
   components: {
     Pane,
     Swiper,
     SwiperSlide,
+  },
+  data() {
+    return {
+      list: [],
+    };
   },
   props: {
     config: {
@@ -37,20 +45,18 @@ export default {
       type: Object,
       default: () => {
         return {
-          class: "billboard-presentation-container", // useless, remove.
           loop: true,
           lazy: true,
-          allowTouchMove: true,
+          allowTouchMove: false,
           preloadImages: true,
-          slidesPerView: 1,
           autoplay: {
-            delay: 1000,
-            disableOnInteraction: true,
-          },
+            delay: 5000, // TODO make 30s
+            pauseOnMouseEnter: true,
+          }
         };
       },
     },
-    promise: {
+    request: {
       type: Promise,
       required: true,
     },
@@ -60,16 +66,23 @@ export default {
       console.log("fired");
     },
   },
-  data() {
-    return {
-      list: null,
-    };
-  },
-  mounted() {
-    this.$props.promise.then((r) => {
-      this.list = r.data.results;
+  created() {
+    this.$props.request.forEach((req) => {
+      const connector = req.connector;
+      var promise = null;
+
+      switch (connector) {
+        case "tmdb":
+          promise = stringToTMDB(req.function, req.args);
+          break;
+        // TODO Trakt support
+      }
+
+      promise.then((r) => {
+        // TODO Trakt support
+        this.list = [...this.list, ...r.data.results];
+      });
     });
   },
-  name: "Billboard",
 };
 </script>

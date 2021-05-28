@@ -1,5 +1,9 @@
 <template>
-  <div class="billboard-pane">
+  <div
+    class="billboard-pane"
+    @mouseenter="onMouseEnter"
+    @mouseleave="onMouseLeave"
+  >
     <div class="fill-container">
       <div class="info">
         <div class="logo-and-text" v-if="this.details">
@@ -29,14 +33,24 @@
           </div>
 
           <div class="billboard-links">
-            <button @click="onPlayClick">Play</button>
+            <button class="btn-play" @click="onPlayClick">Play</button>
+            <button class="btn-info">Info</button>
           </div>
         </div>
       </div>
     </div>
+    <div class="video-container">
+      <video
+        id="video-player"
+        class="theatr-trailer image-layer video-js vjs-default-style"
+        ref="video"
+      ></video>
+    </div>
     <div class="image-wrapper">
+      <div class="image-vignette"></div>
       <img
-        :src="'https://images.tmdb.org/t/p/original' + info.backdrop_path"
+        class="image-layer static-img"
+        :src="'https://images.tmdb.org/t/p/w1280' + info.backdrop_path"
         :alt="info.title"
       />
     </div>
@@ -46,6 +60,10 @@
 <script>
 import { MEDIA, getDetails } from "../../api/tmdb";
 import { getFanArt } from "../../api/fanart";
+import { ipcRenderer } from "electron";
+
+import videojs from "video.js";
+import "video.js/dist/video-js.css";
 
 export default {
   name: "Pane",
@@ -59,10 +77,16 @@ export default {
     return {
       details: null,
       fanart: null,
+      youtube: null,
+      player: null,
+
+      isMouseOver: false,
+      isHovering: false,
     };
   },
   watch: {
-    details: ["fetchFanArt"],
+    details: ["fetchFanArt", "fetchVideos"],
+    isHovering: ["onHover"],
   },
   computed: {
     getMediaType() {
@@ -73,6 +97,55 @@ export default {
     },
   },
   methods: {
+    onMouseEnter() {
+      this.isMouseOver = true;
+
+      setTimeout(() => {
+        if (this.isMouseOver) {
+          this.isHovering = true;
+        }
+      }, 2000);
+    },
+    onMouseLeave() {
+      this.isHovering = false;
+      this.isMouseOver = false;
+    },
+    onHover() {
+      // TODO load and play video
+      if (this.isHovering) {
+        if (this.youtube) {
+          /* console.log(
+            this.youtube.formats[0].mimeType.split(";")[0],
+            this.youtube.formats[0].url
+          );
+
+          this.player = videojs(
+            this.$refs.video.getAttribute("id"),
+            {
+              controls: true,
+              autoplay: false,
+              preload: "auto",
+            },
+            () => {}
+          );
+
+          setTimeout(() => {
+            this.player.src({
+              type: this.youtube.formats[0].mimeType.split(";")[0],
+              src: this.youtube.formats[0].url,
+            });
+
+            this.$refs.video.classList.add("playing");
+
+            setTimeout(() => {
+              this.player.play();
+            }, 1200);
+          }, 1000); */
+        }
+      } else {
+        // TODO
+      }
+    },
     onPlayClick() {
       this.$router.push(
         `/watch/${encodeURI(
@@ -103,7 +176,6 @@ export default {
           return englishLogos[0].url;
         }
       }
-
       return null;
     },
     fetchFanArt() {
@@ -175,16 +247,55 @@ export default {
           }
         });
     },
+
     fetchDetails() {
       getDetails(this.$props.info.id, this.mediaType, {
-        append_to_response: "images,videos",
+        params: { append_to_response: "images,videos" },
       }).then((r) => {
         this.details = r.data;
       });
     },
+
+    fetchVideos() {
+      if (this.details.videos) {
+        const selectedLangs = this.details.videos.results.filter(
+          (o) => o.iso_639_1 == this.$store.state.ISO639
+        );
+        var selectedTypes = selectedLangs.filter((o) => o.type == "Clip");
+
+        if (selectedTypes.length <= 0)
+          selectedTypes = selectedLangs.filter((o) => o.type == "Trailer");
+        if (selectedTypes.length <= 0)
+          selectedTypes = selectedLangs.filter((o) => o.type == "Teaser");
+        if (selectedTypes.length <= 0)
+          selectedTypes = selectedLangs.filter(
+            (o) => o.type == "Behind the Scenes"
+          );
+        if (selectedTypes.length <= 0) return;
+
+        const selectedSites = selectedTypes.filter((o) => o.site == "YouTube");
+
+        const key = selectedSites[0].key;
+
+        ipcRenderer.send("yt-get-video-info", key);
+        ipcRenderer.once(`yt-get-video-info-${key}`, (e, ...args) => {
+          this.youtube = args[0].streamingData;
+        });
+      }
+    },
   },
-  mounted() {
+  created() {
     this.fetchDetails();
+  },
+  mounted() {},
+  beforeUnmount() {
+    if (this.player) {
+      try {
+        this.player.dispose();
+      } catch (e) {
+        console.error(e);
+      }
+    }
   },
 };
 </script>
