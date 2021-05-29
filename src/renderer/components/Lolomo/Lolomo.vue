@@ -1,27 +1,25 @@
 <template>
   <Billboard v-if="config.billboard" v-bind="config.billboard" />
 
-  <Lom
-    v-for="lom in config.loms"
-    :key="lom.listName"
-    v-bind="lom"
-    :bbpresent="config.billboard ? true : false"
-    @card-popover="onCardPopover($event)"
-  />
-
-  <CardPopover :options="popover" />
+  <div :class="`lom-rowcontainer ${config.billboard ? 'with-billboard' : ''}`">
+    <Lom
+      v-for="lom in config.loms"
+      :key="lom.listName"
+      v-bind="lom"
+      @card-popover="onCardPopover($event)"
+    />
+  </div>
 </template>
 
 <script>
 import Billboard from "./Billboard";
 import Lom from "./Lom";
-import CardPopover from "./CardPopover";
 import "./Lolomo.scss";
 import { SEARCH, search } from "../../api/tmdb";
 import { CancelToken, axios } from "../../api/axios";
 
 export default {
-  components: { Billboard, Lom, CardPopover },
+  components: { Billboard, Lom },
   name: "Lolomo",
   props: {
     section: {
@@ -46,8 +44,10 @@ export default {
   },
   methods: {
     onCardPopover(e) {
-      console.log(e);
       this.popover = e;
+    },
+    onCardPopoverUnpop() {
+      this.popover = [false];
     },
     setConfig() {
       this.config = this.getSectionExports(this.getSection);
@@ -94,8 +94,6 @@ export default {
   created() {
     this.setConfig();
   },
-  updated() {
-    console.log("Lolomo");
-  },
+  updated() {},
 };
 </script>
