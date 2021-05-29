@@ -1,4 +1,5 @@
 # Theatr
+A reverse-engineered Netflix UI project featuring "party watching" and magnet streaming using WebTorrent and Video.js with on-the-fly transcoding to MPEG-4. Also features support for all* public and private torrent trackers and aggregate searching built-in per Jackett's functionality and Sonarr integration for alerting you of your fav releases. 
 
 ## Project setup
 ```
