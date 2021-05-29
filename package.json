@@ -1,8 +1,8 @@
 {
-  "name": "angel-vue",
+  "name": "Theatr",
   "version": "1.0.0",
   "private": true,
-  "author": "",
+  "author": "Magic",
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
@@ -10,12 +10,12 @@
     "electron:build": "vue-cli-service electron:build",
     "electron:serve": "vue-cli-service electron:serve",
     "postinstall": "electron-builder install-app-deps",
-    "postuninstall": "electron-builder install-app-deps",
-    "test": "node test.js"
+    "postuninstall": "electron-builder install-app-deps"
   },
   "main": "renderer/index.js",
   "dependencies": {
     "@electron/remote": "^1.1.0",
+    "@ffmpeg/ffmpeg": "^0.10.0",
     "axios": "^0.21.1",
     "axios-cache-adapter": "^2.7.3",
     "bootstrap": "^5.0.0-beta3",
@@ -38,6 +38,7 @@
     "xml2js": "^0.4.23"
   },
   "devDependencies": {
+    "@ffmpeg/core": "^0.10.0",
     "@vue/cli-plugin-babel": "~4.5.0",
     "@vue/cli-plugin-eslint": "~4.5.0",
     "@vue/cli-plugin-router": "^4.5.12",
