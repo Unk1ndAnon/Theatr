@@ -35,6 +35,7 @@
                 v-model="searchField"
                 target="_blank"
                 class="searchBar"
+                ref="searchBar"
                 @input="search"
               />
             </div>
@@ -54,6 +55,10 @@ export default {
     ProfileImage,
   },
   methods: {
+    focus() {
+      console.log(1);
+      this.$refs.searchBar.focus();
+    },
     search() {
       this.searchTerm = this.searchField;
       this.$router.replace(`/search/${this.searchTerm}`);
@@ -71,6 +76,9 @@ export default {
   created() {
     this.searchField = this.$route.params.searchTerm || "";
     window.addEventListener("scroll", this.windowScrolled);
+  },
+  mounted() {
+    this.$refs.searchBar.focus()
   },
   unmounted() {
     window.removeEventListener("scroll", this.windowScrolled);
