@@ -14,7 +14,11 @@
       ref="slider"
     >
       <swiper-slide v-for="item in list" :key="item.id">
-        <Card :config="config" :info="item" @card-popover="this.$emit('card-popover', $event)" />
+        <Card
+          :config="config"
+          :info="item"
+          @card-popover="this.$emit('card-popover', $event)"
+        />
       </swiper-slide>
     </swiper>
   </div>
@@ -193,10 +197,14 @@ export default {
       this.list.sort(cb);
     },
   },
-  created() {
-    this.makeInitialRequest();
+  watch: {
+    "$props.request": {
+      handler: function(to) {
+        this.makeInitialRequest();
+      }
+    },
   },
-  updated() {
+  created() {
     this.makeInitialRequest();
   },
 };
