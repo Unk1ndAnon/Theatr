@@ -116,7 +116,7 @@ export default {
 
       li {
         cursor: pointer;
-        transition: color .05s;
+        transition: color 0.05s;
       }
 
       li:hover {

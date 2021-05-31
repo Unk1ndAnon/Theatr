@@ -33,8 +33,7 @@ const swiperDefaults = {
       slidesPerGroup: 5,
     },
   },
-}
-
+};
 
 // Section Configuration
 export default {

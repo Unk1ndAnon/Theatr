@@ -28,12 +28,13 @@ export default {
       },
     },
   },
+  mounted() {},
 };
 </script>
 
 <style lang="scss" scoped>
 .browse-container {
-  position: relative;
-  z-index: 0;
+  min-height: 1000px;
+  overflow: hidden;
 }
 </style>

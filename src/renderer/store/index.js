@@ -7,12 +7,12 @@ export default createStore({
     ISO639: "en",
     trakt: {
       authCode: null,
-    }
+    },
   },
   getters: {
     isTraktLinked: () => {
       return null;
-    }
+    },
   },
   mutations: {
     Language(state, l) {
@@ -28,6 +28,6 @@ export default createStore({
   plugins: [
     createPersistedState({
       storage: window.sessionStorage,
-    })
-  ]
+    }),
+  ],
 });

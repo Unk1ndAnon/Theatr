@@ -52,7 +52,7 @@ export default {
           autoplay: {
             delay: 5000, // TODO make 30s
             pauseOnMouseEnter: true,
-          }
+          },
         };
       },
     },

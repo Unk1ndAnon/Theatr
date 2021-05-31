@@ -1,5 +1,10 @@
 <template>
-  <a @click="onClick" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
+  <a
+    class="title-card"
+    @click="onClick"
+    @mouseenter="onMouseEnter"
+    @mouseleave="onMouseLeave"
+  >
     <div
       ref="card"
       :class="`boxart boxart-rounded boxart-size-${getOrientation}`"
@@ -10,12 +15,6 @@
         :src="backdropPath"
       />
 
-      <div class="overlay-container" v-if="progress">
-        <div class="progress-bar">
-          <progress :value="progress" max="100" />
-        </div>
-      </div>
-
       <div
         class="fallback-text-container"
         :class="isLoading ? 'pulse' : ''"
@@ -23,6 +22,16 @@
       >
         <p class="fallback-text" v-if="!isLoading">{{ getMediaTitle }}</p>
       </div>
+    </div>
+
+    <div
+      :class="`progress-container ${
+        progress != null ? 'opaque' : 'translucent'
+      }`"
+    >
+      <span class="progress-bar">
+        <progress :value="progress" max="100" />
+      </span>
     </div>
   </a>
 </template>
@@ -69,7 +78,13 @@ export default {
   },
   computed: {
     id() {
-      return this.$props.info.id;
+      console.log(this.$props);
+      return this.sourcedFromTrakt
+        ? this.$props.info.movie.ids.tmdb || this.$props.info.show.ids.tmdb
+        : this.$props.info.id;
+    },
+    traktId() {
+      return this.sourcedFromTrakt ? this.$props.info.id : null;
     },
     language() {
       return this.$store.state.ISO639;
@@ -122,7 +137,7 @@ export default {
       // replaced with periods (.)
       return encodeURIComponent(
         btoa([
-          this.$props.info.id,
+          this.id,
           this.details ? this.details.imdb_id : "",
           this.getMediaType,
           encodeURIComponent(this.$props.info.title || this.$props.info.name),
@@ -134,12 +149,12 @@ export default {
       const episode = this.selectedEpisode || this.seasons[1].episodes[0];
       return encodeURIComponent(
         btoa([
-          this.$props.info.id,
+          this.id,
           null,
           this.getMediaType,
           encodeURIComponent(episode.name),
           episode.air_date,
-          `s${episode.season_number}e${episode.episode_number}`,
+          `s${episode.season_number}:e${episode.episode_number}`,
         ]).replace(/\//g, ".")
       );
     },
@@ -184,19 +199,22 @@ export default {
 
       setTimeout(() => {
         if (this.isMouseOver) this.isHovering = true;
-      }, 850);
+      }, 600);
     },
     onHover() {
-      if (this.isHovering && this.config.popover) {
+      if (
+        this.isHovering && this.config.popover != null
+          ? this.config.popover
+          : true
+      ) {
         this.$emit("card-popover", [
           true,
           this.getAbsoluteDimensions(),
-          this.backdropPath,
+          this.$props,
           this.details,
           this.fanart,
+          this.backdrop,
         ]);
-      } else {
-        //this.$emit("card-popover", [false]);
       }
     },
     onMouseLeave() {
@@ -204,8 +222,6 @@ export default {
       this.isHovering = false;
     },
     fetchDetails() {
-      this.sourcedFromTrakt = this.$props.info.type ? true : false;
-
       if (this.$props.info.progress) this.progress = this.$props.info.progress;
 
       getDetails(
@@ -304,6 +320,8 @@ export default {
     },
   },
   created() {
+    this.sourcedFromTrakt = this.$props.info.type ? true : false;
+
     this.fetchDetails();
 
     setTimeout(() => {
@@ -324,6 +342,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.opaque {
+  opacity: 1;
+}
+
+.translucent {
+  opacity: 0;
+}
+
 a {
   text-decoration: none;
   color: whitesmoke;
@@ -378,19 +404,19 @@ a {
     width: 100%;
     height: 100%;
     z-index: 2;
+  }
+
+  .progress-container {
+    position: relative;
+    transition: opacity 350ms;
+    text-align: center;
 
     .progress-bar {
-      position: absolute;
-      width: 96%;
-      right: 2%;
-      left: 2%;
-      bottom: 1%;
-
       progress {
         appearance: none;
         border: none;
-        height: 0.5em;
-        width: 100%;
+        height: 3px;
+        width: 85%;
       }
 
       progress[value] {
@@ -398,7 +424,7 @@ a {
       }
 
       progress::-webkit-progress-bar {
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5) inset;
       }
 
       progress[value]::-webkit-progress-value {
@@ -428,8 +454,9 @@ a {
       right: 5%;
       text-shadow: rgb(0, 0, 0) 0 0 4px;
       text-align: center;
-      text-overflow: wrap;
+      text-overflow: ellipsis;
       font-weight: 700;
+      font-size: 1.2em;
       overflow: hidden;
       z-index: 2;
     }

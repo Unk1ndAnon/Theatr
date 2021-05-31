@@ -20,9 +20,8 @@ export function scrapeIDs(query, sect) {
     },
     transformResponse: (r) => {
       const dom = new JSDOM(r);
-      const search_results = dom.window.document.querySelector(
-        "div.search_results"
-      );
+      const search_results =
+        dom.window.document.querySelector("div.search_results");
       const section = search_results
         .getElementsByTagName("h2")[0]
         .innerHTML.split(" ")[0];
@@ -32,8 +31,8 @@ export function scrapeIDs(query, sect) {
       for (let link of links) {
         const regex =
           section == "Movie"
-            ? link.innerHTML.match(/(.+) \(([\d-]+)\) <s.*>(\d+) I.*/)
-            : link.innerHTML.match(/(.+) <s.*>(\d+) I.*/);
+            ? link.innerHTML.match(/(.+) \(([\d-]+)\) <s.*>(\d+) I.+/)
+            : link.innerHTML.match(/(.+) <s.*>(\d+) I.+/);
 
         list.push({
           id: link.getAttribute("href").split("/")[2],
@@ -51,6 +50,6 @@ export function scrapeIDs(query, sect) {
 export function getFanArt(imdb_id, media_type = "movies", options = {}) {
   return _api.get(
     `/${media_type == "movie" ? "movies" : media_type}/${imdb_id}`,
-    options,
+    options
   );
 }

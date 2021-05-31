@@ -16,7 +16,7 @@ const swiperDefaults = {
     },
     1280: {
       slidesPerView: 8,
-    }
+    },
   },
 };
 
