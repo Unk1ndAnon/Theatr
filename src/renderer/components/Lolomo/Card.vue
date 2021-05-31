@@ -56,6 +56,7 @@ export default {
       isMouseOver: false,
       isHovering: false,
       cancelTokens: {
+        episodes: CancelToken.source(),
         details: CancelToken.source(),
         fanart: CancelToken.source(),
       },
@@ -63,7 +64,7 @@ export default {
   },
   emits: ["card-popover"],
   watch: {
-    details: ["loadFanArt"], //, "loadSeasonEpisodes"],
+    details: ["loadFanArt", "loadSeasonEpisodes"],
     isHovering: ["onHover"],
   },
   computed: {
@@ -129,7 +130,7 @@ export default {
         ]).replace(/\//g, ".")
       );
     },
-    /*getEncodedInfoForEpisode() {
+    getEncodedInfoForEpisode() {
       const episode = this.selectedEpisode || this.seasons[1].episodes[0];
       return encodeURIComponent(
         btoa([
@@ -141,7 +142,7 @@ export default {
           `s${episode.season_number}e${episode.episode_number}`,
         ]).replace(/\//g, ".")
       );
-    },*/
+    },
     getWatchLink() {
       if (this.getMediaType == MEDIA.Show) {
         return `/watch/${this.getEncodedInfoForEpisode}`;
@@ -165,7 +166,7 @@ export default {
         // These below values are already absolute in ClientRect.
         width: ClientRect.width,
         height: ClientRect.height,
-      }
+      };
     },
     debug() {
       console.log(this.getMediaTitle, this.details);
@@ -220,11 +221,11 @@ export default {
         .then((r) => {
           this.details = r.data;
 
-          /*if (this.getMediaType == MEDIA.Show) {
+          if (this.getMediaType == MEDIA.Show) {
             r.data.seasons.forEach((s) => {
               this.loadSeasonEpisodes(s.season_number);
             });
-          }*/
+          }
 
           // Sort backdrops by vote_count (vote_average as returned by API)
           const backdrops = (
@@ -255,13 +256,15 @@ export default {
           }
         });
     },
-    /*loadSeasonEpisodes(season_number) {
+    loadSeasonEpisodes(season_number) {
       // Get basic episode details
-      getEpisodes(this.$props.info.id, season_number, null).then((r) => {
+      getEpisodes(this.$props.info.id, season_number, null, {
+        cancelToken: this.cancelTokens.episodes.token,
+      }).then((r) => {
         // Add to this.seasons array under season number as key
         this.seasons[season_number] = r.data;
       });
-    },*/
+    },
     loadFanArt() {
       // Create cancel token
       this.fanart = getFanArt(
@@ -311,8 +314,11 @@ export default {
     }, 8000);
   },
   beforeUnmount() {
-    this.cancelTokens.fanart.cancel("Operation canceled by lifecycle hook.");
-    this.cancelTokens.details.cancel("Operation canceled by lifecycle hook.");
+    if (this.cancelTokens) {
+      Array.from(this.cancelTokens).forEach((token) => {
+        token.cancel("Operation canceled by lifecycle hook.");
+      });
+    }
   },
 };
 </script>
