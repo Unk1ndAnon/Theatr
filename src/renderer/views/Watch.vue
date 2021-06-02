@@ -1,5 +1,5 @@
 <template>
-  <div class="watch-container" v-if="details">
+  <div class="watch-container" v-show="details">
     <video
       id="videoPlayer"
       ref="video"
@@ -11,8 +11,12 @@
       ref="backdropElement"
       alt=""
       class="poster pan"
-      v-if="loading"
+      v-show="loading"
     />
+
+    <div class="overlay">
+      <button @click="goBack">Back</button>
+    </div>
   </div>
 </template>
 
@@ -25,7 +29,7 @@ import { CancelToken, axios } from "../api/axios";
 import videojs from "video.js";
 import "video.js/dist/video-js.css";
 
-const WebTorrent = require("webtorrent");
+const WebTorrent = require("webtorrent-hybrid");
 
 export default {
   name: "Watch",
@@ -40,6 +44,8 @@ export default {
       fanart: null,
       sources: null,
       sourceIndex: null,
+      magnet: null,
+      file: null,
       loading: true,
       client: null,
       torrent: null,
@@ -54,9 +60,12 @@ export default {
     };
   },
   watch: {
-    sourceIndex: "renderVideo",
+    blob: ["renderVideoFromBlob"],
+    file: ["renderVideo"],
+    magnet: ["addMagnet"],
+    sourceIndex: ["downloadTorrent"],
     details: ["fetchFanArt", "fetchSources"],
-    backdrops: "startRotatingBackdrops",
+    backdrops: ["startRotatingBackdrops"],
   },
   computed: {
     currentBackdrop: {
@@ -79,6 +88,9 @@ export default {
       console.log("WATCH", text);
       this.statusText = text;
     },
+    goBack() {
+      this.$router.back();
+    },
     fetchSources() {
       this.setStatus("Searching for sources...");
 
@@ -90,10 +102,11 @@ export default {
       var e = null;
 
       if (this.getMediaType == MEDIA.Show) {
-        match = this.mi[5].match(/s(\d+)e(\d+)/);
+        match = this.mi[5].match(/s(\d+):e(\d+)/);
         s = match[1];
         e = match[2];
       }
+
       search(imdb_id || nameOrTitle, s, e)
         .then((r) => {
           // Parse XML and convert to a JS Object
@@ -104,12 +117,18 @@ export default {
                 var restructured = {};
 
                 restructured.title = o.title.toString();
-                restructured.source_type = o.link
-                  .toString()
-                  .startsWith("magnet:")
-                  ? "magnet"
-                  : "http";
-                restructured.source = o.link.toString();
+                restructured.source_type =
+                  o.link.toString().startsWith("magnet:") ||
+                  o["torznab:attr"].find((i) => i.$.name == "magneturl")
+                    ? "magnet"
+                    : "http";
+                restructured.source =
+                  restructured.source_type == "magnet"
+                    ? o.link.toString().startsWith("magnet")
+                      ? o.link.toString()
+                      : o["torznab:attr"].find((i) => i.$.name == "magneturl").$
+                          .value
+                    : o.link.toString();
                 restructured.size = o.size[0];
                 restructured.quality =
                   o.title
@@ -134,17 +153,13 @@ export default {
                 restructured.peers = o["torznab:attr"].find(
                   (i) => i.$.name == "peers"
                 ).$.value;
+                restructured.torznab = o["torznab:attr"];
 
                 return restructured;
               });
 
-              // Filter by magnet, then sort by quality exluding those that quality isn't known.
-              this.sources = items
-                .filter((s) => s.source_type == "magnet")
-                .sort((a, b) =>
-                  a.quality && b.quality ? a.quality[1] > b.quality[1] : false
-                );
-
+              // Set the sources object
+              this.sources = items;
               this.sourceIndex = 0;
 
               this.setStatus(
@@ -164,21 +179,97 @@ export default {
     fetchFanArt() {
       this.setStatus("Fetching fan art...");
 
-      getFanArt(this.details.imdb_id || this.mi[1], this.getMediaType, {
+      getFanArt(this.mi[1], this.getMediaType, {
         cancelToken: this.cancelTokens.fanart.token,
-      }).then((r) => {
-        this.fanart = r.data;
+      })
+        .then((r) => {
+          this.fanart = r.data;
 
-        const backgrounds = r.data.moviebackground || r.data.showbackground;
+          const backgrounds = r.data.moviebackground || r.data.showbackground;
 
-        if (backgrounds) {
-          this.backdrops.push(
-            ...(r.data.moviebackground || r.data.showbackground).filter((i) => {
-              return i.lang == "";
-            })
+          if (backgrounds) {
+            this.backdrops.push(
+              ...(r.data.moviebackground || r.data.showbackground).filter(
+                (i) => {
+                  return i.lang == "";
+                }
+              )
+            );
+          }
+        })
+        .catch((e) => {
+          // Try again with IMDB ID
+          if (this.details && this.details.imdb_id) {
+            getFanArt(this.details.imdb_id, this.getMediaType)
+              .then((r) => {
+                this.fanart = r.data;
+              })
+              .catch((e) => {
+                this.scrapeFanArt();
+              });
+          } else {
+            this.scrapeFanArt();
+          }
+        });
+    },
+    scrapeFanArt() {
+      // Scrape the ID from the HTML results on the site
+      // Their TOS doesn't allow this
+      // so shut up about it
+      const { ipcRenderer } = require("electron");
+
+      const releaseDate =
+        this.details.release_date || this.details.first_air_date;
+
+      ipcRenderer.once(
+        `fanarttv-scrape-${this.details.id || this.mi[0]}`,
+        (e, data) => {
+          var fanartResults = JSON.parse(data);
+
+          fanartResults = fanartResults.filter((m) => {
+            if (m.year > 0) {
+              // if year exists in fanart response
+              return m.year == releaseDate.split("-")[0];
+            }
+          });
+
+          fanartResults = fanartResults.sort((a, b) => {
+            b.imageCount - a.imageCount;
+          });
+
+          // TODO sort the fanartResults array by imageCount (in case of multiple results for year)
+          fanartResults = fanartResults.sort(
+            (a, b) => b.imageCount - a.imageCount
           );
+
+          // TODO some fanart names are different than the names returned from TMDb
+          // TODO write an algorithm to determine similarity between two title names (thresholded)
+          if (fanartResults[0]) {
+            getFanArt(fanartResults[0].id, this.getMediaType)
+              .then((r) => {
+                this.fanart = r.data;
+              })
+              .catch((e) => {
+                console.error(
+                  "Fanart",
+                  this.id,
+                  fanartResults[0].id,
+                  fanartResults,
+                  e
+                );
+              });
+          }
         }
-      });
+      );
+
+      // Send to ipcMain, which will scrape FanArtTV (bypassing CORS) for the fanart ID
+      ipcRenderer.send(
+        `scrape-fanarttv`,
+        this.details.id || this.mi[0],
+        this.getMediaTitle,
+        releaseDate.split("-")[0] | "",
+        this.getMediaType === "movie" ? 3 : 1
+      );
     },
     fetchDetails() {
       // Decode the `mi` param.
@@ -208,12 +299,14 @@ export default {
 
       if (this.mi[2] == MEDIA.Show) {
         if (this.mi[5]) {
-          const matches = this.mi[5].match(/s(\d+)e(\d+)/);
+          const matches = this.mi[5].match(/s(\d+):e(\d+)/);
           const s = matches[1];
           const e = matches[2];
 
           getEpisodes(this.mi[0], s, e, {
-            append_to_response: "images,videos",
+            params: {
+              append_to_response: "images,videos",
+            },
           }).then((r) => {
             if (!this.episodes[s]) this.episodes[s] = {};
             this.episodes[s][e] = r.data;
@@ -225,124 +318,243 @@ export default {
         }
       }
     },
-    renderVideo() {
-      this.setStatus("Loading movie...");
-      console.log("JACKETT SOURCES", this.sources);
+    downloadTorrent() {
+      const source = this.sources[this.sourceIndex].source;
 
-      var client = new WebTorrent();
+      if (source.startsWith("http")) {
+        // Download
+        const http = require("http");
+        http.get(source, (r) => {
+          if (r.headers.location.startsWith("magnet"))
+            this.magnet = r.headers.location;
+        });
+      } else {
+        this.magnet = source;
+      }
+    },
+    addMagnet() {
+      this.setStatus("Loading movie...");
+      console.log("JACKETT SOURCES", this.sources); // TODO remove
+
+      const client = new WebTorrent();
 
       client.on("error", (err) => {
-        console.error("client", err);
+        console.error("client", err); // TODO remove
       });
 
       client.on("torrent", (t) => {
-        console.log("client", t);
+        console.log("client", t); // TODO remove
       });
 
-      console.log("Adding", this.sources[this.sourceIndex].source);
+      if (this.magnet) {
+        console.log("Adding", this.magnet); // TODO remove
 
-      if (this.sources[this.sourceIndex]) {
-        client.add(this.sources[this.sourceIndex].source, (t) => {
+        client.add(this.magnet, (t) => {
           t.on("infohash", () => {
-            console.log("torrent", "infohash");
+            console.log("torrent", "infohash"); // TODO remove
           });
           t.on("metadata", () => {
-            console.log("torrent", "metadata");
+            console.log("torrent", "metadata"); // TODO remove
           });
           t.on("ready", () => {
-            console.log("torrent", "ready");
+            console.log("torrent", "ready"); // TODO remove
           });
           t.on("warning", (warn) => {
-            console.warn("torrent", warn);
+            console.warn("torrent", warn); // TODO remove
           });
           t.on("error", (err) => {
-            console.error("torrent", err);
+            console.error("torrent", err); // TODO remove
           });
           t.on("done", () => {
-            console.log("torrent", "done");
+            console.log("torrent", "done"); // TODO remove
           });
 
-          // TODO support multiple video and audio codecs (mkv avi m4v...)
+          this.torrent = t;
 
           // Filter files by those with supported file extensions
           // then reduce down to the single largest file.
-          const f = t.files
-            .filter((f) =>
-              ["mp4"].some((ext) =>
-                f.name.endsWith("." + ext)
-              )
+          var f = t.files.filter((f) =>
+            ["mp4", "mkv", "avi", "m4v"].some((ext) =>
+              f.name.endsWith("." + ext)
             )
-            .reduce((a, b) => {
+          );
+
+          var selectedFile;
+
+          if (this.getMediaType == MEDIA.Show) {
+            // Sometimes the torrents are bundles of multiple episodes
+            // or seasons. So if this is the case, find the file that
+            // matches our intended episode.
+            selectedFile = f.find((f) => {
+              let s = this.mi[5].split(":")[0];
+              let e = this.mi[5].split(":")[1];
+              if (f.name.indexOf(s) >= 0) {
+                if (f.name.indexOf(e) >= 0) {
+                  return true;
+                }
+              }
+              return false;
+            });
+            console.log(selectedFile); // TODO remove
+          } else {
+            // Media type is a movie, so reduce the files down to the
+            // largest.
+            selectedFile = f.reduce((a, b) => {
               return a.length > b.length ? a : b;
             });
+          }
 
-          if (f) {
-            this.sources[this.sourceIndex].mime_type = "video/mp4";
-            this.setStatus("Initializing video player");
+          this.file = selectedFile;
 
-            setTimeout(() => {
-              if (this.player.readyState() == 0) {
-                // Change the source type
-                this.sourceIndex++;
-                this.setStatus("Trying another source");
-              }
-            }, 13000);
+          this.transcodeVideo();
+        });
 
-            this.player = videojs(
-              this.$refs.video.getAttribute("id"),
-              function () {
-                f.renderTo(`#${this.$refs.video.getAttribute("id")}`);
-                this.blob = this.$refs.video.getAttribute("src");
+        this.client = client;
+      } else {
+        this.setStatus("No sources found for torrent.");
+      }
+    },
+    async transcode() {
+      // TODO ffmpeg transcode stream
+
+      /*ffmpeg.setLogger(({ type, message }) => {
+        console.log(type, message); // TODO remove
+      });
+
+      await ffmpeg.load();
+
+      ffmpeg.FS(
+        "writeFile",
+        this.file.name,
+        await fetchFile(`${this.torrent.path}/${this.file.name}`)
+      );
+      const mp4 = this.file.name.replace(/\..+$/, ".mp4");
+
+      await ffmpeg.run("-i", this.file.name, mp4);
+
+      const data = ffmpeg.FS("readFile", mp4);
+      this.blob = URL.createObjectURL(
+        new Blob([data.buffer], { type: "video/mp4" })
+      );*/
+    },
+    transcodeVideo() {
+      if (!this.file.name.endsWith(".mp4")) {
+        this.transcode();
+      }
+    },
+    renderVideo() {
+      console.log("rendering", this.file); // TODO remove
+
+      if (this.sources[this.sourceIndex]) {
+        this.sources[this.sourceIndex].mime_type = "video/mp4";
+        this.setStatus("Initializing video player");
+
+        /*setTimeout(() => {
+            if (this.player.readyState() == 0) {
+              // Change the source type
+              this.sourceIndex++;
+              this.setStatus("Trying another source");
+            }
+          }, 30000);*/
+
+        if (this.$refs.video) {
+          this.player = videojs(
+            this.$refs.video.getAttribute("id"),
+            {
+              videoOptions: {
+                autoplay: false,
+              },
+            },
+            () => {
+              this.file.renderTo(`#${this.$refs.video.getAttribute("id")}`);
+              const blob = this.$refs.video.getAttribute("src");
+
+              setTimeout(() => {
+                this.setStatus("Setting player blob");
+
+                this.player.cache_.source = {
+                  type: this.sources[this.sourceIndex].mime_type,
+                  src: blob,
+                };
+
+                this.setStatus("Streaming");
+
+                // Begin background fade
+                this.$refs.backdropElement.classList.add("hidden", "fade");
 
                 setTimeout(() => {
-                  this.setStatus("Setting player blob");
+                  this.$refs.video.parentNode.classList.remove("hidden");
+                  this.$refs.video.classList.remove("hidden");
 
-                  this.player.cache_.source = {
-                    type: this.source.mime_type,
-                    src: this.blob,
-                  };
+                  this.loading = false;
+                  this.player.play();
 
-                  this.client = client;
-                  this.torrent = t;
+                   // TODO remove
+                  setInterval(
+                    () =>
+                      console.log(
+                        this.torrent.progress * 100,
+                        (this.torrent.downloaded / 1024) ^
+                          (2 + "MB of " + this.torrent.length / 1024) ^
+                          2,
+                        ("@" + this.torrent.downloadSpeed / 1024) ^ (2 + "MB/s")
+                      ),
+                    5000
+                  );
+                }, 3000); // create suspense... 1 second of blackness :)
+              }, 100);
+            }
+          );
+        } else {
+          console.log("Video not referenced"); // TODO remove
+        }
+      }
+    },
+    renderVideoFromBlob() {
+      console.log("rendering", this.blob); // TODO remove
+      this.setStatus("Initializing video player");
+      if (this.$refs.video) {
+        this.player = videojs(
+          this.$refs.video.getAttribute("id"),
+          {
+            videoOptions: {
+              autoplay: false,
+            },
+          },
+          () => {
+            this.setStatus("Setting player blob");
 
-                  this.setStatus("Streaming");
+            this.player.cache_.source = {
+              type: this.sources[this.sourceIndex].mime_type,
+              src: this.blob,
+            };
 
-                  // Begin background fade
-                  this.$refs.backdropElement.classList.add("hidden", "fade");
+            this.setStatus("Streaming");
 
-                  setTimeout(() => {
-                    this.$refs.video.parentNode.classList.remove("hidden");
-                    this.$refs.video.classList.remove("hidden");
+            // Begin background fade
+            this.$refs.backdropElement.classList.add("hidden", "fade");
+            setTimeout(() => {
+              this.$refs.video.parentNode.classList.remove("hidden");
+              this.$refs.video.classList.remove("hidden");
 
-                    this.loading = false;
-                    this.player.play();
+              this.loading = false;
+              this.player.play();
 
-                    setInterval(
-                      () =>
-                        console.log(
-                          t.progress * 100,
-                          (t.downloaded / 1024) ^
-                            (2 + "MB of " + t.length / 1024) ^
-                            2,
-                          ("@" + t.downloadSpeed / 1024) ^ (2 + "MB/s")
-                        ),
-                      5000
-                    );
-                  }, 3000); // create suspense... 1 second of blackness :)
-                }, 100);
-              }
-            );
-          } else {
-            this.setStatus(
-              "Video type is unsupported. Streaming to VLC instead."
-            );
-            console.log("Opening", t.path);
-            require("child_process").spawn("vlc", [t.path, "--fullscreen"]);
-            this.$router.back();
+               // TODO remove
+              setInterval(
+                () =>
+                  console.log(
+                    this.torrent.progress * 100,
+                    (this.torrent.downloaded / 1024) ^
+                      (2 + "MB of " + this.torrent.length / 1024) ^
+                      2,
+                    ("@" + this.torrent.downloadSpeed / 1024) ^ (2 + "MB/s")
+                  ),
+                5000
+              );
+            });
           }
-        });
-      } else {
-        this.setStatus("Source unavailable. Check log for details.");
+        );
       }
     },
     getBackdrop(i) {
@@ -367,7 +579,7 @@ export default {
           this.$refs.backdropElement.classList.remove("show");
           this.$refs.backdropElement.classList.add("hidden", "fade");
           setTimeout(() => {
-            console.log("Changing backdrop");
+            console.log("Changing backdrop"); // TODO remove
 
             if (this.currentBackdrop >= this.backdrops.length - 1) {
               this.currentBackdrop = 0; // reset
@@ -376,9 +588,11 @@ export default {
             }
 
             setTimeout(() => {
-              // show
-              this.$refs.backdropElement.classList.remove("hidden");
-              this.$refs.backdropElement.classList.add("show");
+              if (this.$refs.backdropElement) {
+                // show
+                this.$refs.backdropElement.classList.remove("hidden");
+                this.$refs.backdropElement.classList.add("show");
+              }
             }, 3000);
           }, 2100);
         }
@@ -390,11 +604,11 @@ export default {
     },
   },
   created() {
+    this.startRotatingBackdrops();
     this.setStatus("Created view");
-    this.fetchDetails();
   },
   mounted() {
-    this.startRotatingBackdrops();
+    this.fetchDetails();
   },
   beforeUnmount() {
     // Cancel all requests
@@ -405,12 +619,22 @@ export default {
       try {
         this.player.dispose();
       } catch (e) {
-        console.error(e);
+        console.error(e); // TODO remove
       }
     }
 
+    if (this.torrent) {
+      this.torrent.pause();
+    }
+
     if (this.client) {
-      this.client.destroy();
+      try {
+        this.client.destroy((e) => {
+          console.error(e); // TODO remove
+        });
+      } catch (e) {
+        // Suppress
+      }
     }
 
     console.log("Destroyed");
@@ -487,6 +711,17 @@ export default {
 
   .pan {
     animation: Pan 60s ease-out 0s infinite;
+  }
+
+  .overlay {
+    position: absolute;
+    z-index: 99;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
   }
 }
 </style>
