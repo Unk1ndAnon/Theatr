@@ -35,7 +35,9 @@
     "vuex": "^4.0.0-alpha.1",
     "vuex-persistedstate": "^4.0.0-beta.3",
     "webtorrent": "^0.118.0",
-    "xml2js": "^0.4.23"
+    "webtorrent-hybrid": "^4.1.0",
+    "xml2js": "^0.4.23",
+    "xmldom": "^0.6.0"
   },
   "devDependencies": {
     "@ffmpeg/core": "^0.10.0",
