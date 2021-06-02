@@ -1,10 +1,6 @@
 <template>
   <div class="watch-container" v-show="details">
-    <video
-      id="videoPlayer"
-      ref="video"
-      class="hidden theatr-player video-js vjs-default-style"
-    />
+    <video id="videoPlayer" ref="video" class="hidden video-js" />
 
     <img
       :src="getBackdrop(currentBackdrop)"
@@ -13,10 +9,6 @@
       class="poster pan"
       v-show="loading"
     />
-
-    <div class="overlay">
-      <button @click="goBack">Back</button>
-    </div>
   </div>
 </template>
 
@@ -27,7 +19,6 @@ import { search } from "../api/jackett";
 import { CancelToken, axios } from "../api/axios";
 
 import videojs from "video.js";
-import "video.js/dist/video-js.css";
 
 const WebTorrent = require("webtorrent-hybrid");
 
@@ -367,6 +358,7 @@ export default {
           });
           t.on("done", () => {
             console.log("torrent", "done"); // TODO remove
+            t.pause();
           });
 
           this.torrent = t;
@@ -416,7 +408,6 @@ export default {
     },
     async transcode() {
       // TODO ffmpeg transcode stream
-
       /*ffmpeg.setLogger(({ type, message }) => {
         console.log(type, message); // TODO remove
       });
@@ -461,9 +452,14 @@ export default {
           this.player = videojs(
             this.$refs.video.getAttribute("id"),
             {
-              videoOptions: {
-                autoplay: false,
-              },
+              autoplay: false,
+              controls: false,
+              loop: false,
+              playbackRates: [0.5, 1, 1.5, 2],
+              sources: [{
+                type: "video/mp4",
+                src: this.torrent.torrentFileBlobURL,
+              }]
             },
             () => {
               this.file.renderTo(`#${this.$refs.video.getAttribute("id")}`);
@@ -472,10 +468,10 @@ export default {
               setTimeout(() => {
                 this.setStatus("Setting player blob");
 
-                this.player.cache_.source = {
+                /*this.player.cache_.source = {
                   type: this.sources[this.sourceIndex].mime_type,
                   src: blob,
-                };
+                };*/
 
                 this.setStatus("Streaming");
 
@@ -488,20 +484,8 @@ export default {
 
                   this.loading = false;
                   this.player.play();
-
-                   // TODO remove
-                  setInterval(
-                    () =>
-                      console.log(
-                        this.torrent.progress * 100,
-                        (this.torrent.downloaded / 1024) ^
-                          (2 + "MB of " + this.torrent.length / 1024) ^
-                          2,
-                        ("@" + this.torrent.downloadSpeed / 1024) ^ (2 + "MB/s")
-                      ),
-                    5000
-                  );
-                }, 3000); // create suspense... 1 second of blackness :)
+                  console.log(this.player);
+                }, 3000); // create suspense... 3 seconds of blackness :)
               }, 100);
             }
           );
@@ -539,19 +523,6 @@ export default {
 
               this.loading = false;
               this.player.play();
-
-               // TODO remove
-              setInterval(
-                () =>
-                  console.log(
-                    this.torrent.progress * 100,
-                    (this.torrent.downloaded / 1024) ^
-                      (2 + "MB of " + this.torrent.length / 1024) ^
-                      2,
-                    ("@" + this.torrent.downloadSpeed / 1024) ^ (2 + "MB/s")
-                  ),
-                5000
-              );
             });
           }
         );
@@ -657,15 +628,11 @@ export default {
 
   overflow: hidden;
 
-  .theatr-player {
+  .video-js {
     position: absolute;
     z-index: 0;
     width: 100%;
     height: 100%;
-
-    video.vjs-tech {
-      outline: 0;
-    }
   }
 
   @keyframes Pan {
