@@ -20,6 +20,7 @@ import { CancelToken, axios } from "../api/axios";
 
 import videojs from "video.js";
 
+const { ipcRenderer } = require("electron");
 const WebTorrent = require("webtorrent-hybrid");
 
 export default {
@@ -207,8 +208,6 @@ export default {
       // Scrape the ID from the HTML results on the site
       // Their TOS doesn't allow this
       // so shut up about it
-      const { ipcRenderer } = require("electron");
-
       const releaseDate =
         this.details.release_date || this.details.first_air_date;
 
@@ -484,6 +483,8 @@ export default {
 
                   this.loading = false;
                   this.player.play();
+
+                  ipcRenderer.send("onVideoPlay");
                   console.log(this.player);
                 }, 3000); // create suspense... 3 seconds of blackness :)
               }, 100);
@@ -523,6 +524,8 @@ export default {
 
               this.loading = false;
               this.player.play();
+
+              ipcRenderer.send("onVideoPlay");
             });
           }
         );
@@ -582,6 +585,8 @@ export default {
     this.fetchDetails();
   },
   beforeUnmount() {
+    ipcRenderer.send("onVideoEnd");
+
     // Cancel all requests
     this.cancelTokens.fanart.cancel("Operation canceled by lifecycle hook.");
     this.cancelTokens.details.cancel("Operation canceled by lifecycle hook.");

@@ -44,3 +44,13 @@ ipcMain.on("yt-get-video-info", (e, ...args) => {
     });*/
     
 });
+
+ipcMain.on("onVideoPlay", (e, ...args) => {
+  const powerSaveBlocker = require("./power-save-blocker");
+  powerSaveBlocker.enable();
+});
+
+ipcMain.on("onVideoEnd", (e, ...args) => {
+  const powerSaveBlocker = require("./power-save-blocker");
+  powerSaveBlocker.disable();
+})
