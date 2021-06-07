@@ -9,10 +9,14 @@
       class="poster pan"
       v-show="loading"
     />
+
+    <div class="overlay"><button @click="goBack">Go Back</button></div>
   </div>
 </template>
 
 <script>
+import store from "../store";
+import Trakt, { isAuthenticated } from "../api/trakt";
 import { MEDIA, getDetails, getEpisodes } from "../api/tmdb";
 import { getFanArt } from "../api/fanart";
 import { search } from "../api/jackett";
@@ -43,7 +47,6 @@ export default {
       torrent: null,
       player: null,
       blob: null,
-      loadingBg: "black",
       statusText: "Loading component...",
       cancelTokens: {
         details: CancelToken.source(),
@@ -76,6 +79,13 @@ export default {
     },
   },
   methods: {
+    videoprogress() {
+      // Get the video player progress as a percentage with maximum
+      // 2 decimal points.
+      if (this.player)
+        ((this.player.currentTime() / this.player.duration()) * 100).toFixed(2);
+      return 0;
+    },
     setStatus(text) {
       console.log("WATCH", text);
       this.statusText = text;
@@ -451,14 +461,16 @@ export default {
           this.player = videojs(
             this.$refs.video.getAttribute("id"),
             {
-              autoplay: false,
+              autoplay: true,
               controls: false,
               loop: false,
               playbackRates: [0.5, 1, 1.5, 2],
-              sources: [{
-                type: "video/mp4",
-                src: this.torrent.torrentFileBlobURL,
-              }]
+              sources: [
+                {
+                  type: "video/mp4",
+                  src: this.torrent.torrentFileBlobURL,
+                },
+              ],
             },
             () => {
               this.file.renderTo(`#${this.$refs.video.getAttribute("id")}`);
@@ -482,9 +494,53 @@ export default {
                   this.$refs.video.classList.remove("hidden");
 
                   this.loading = false;
+
+                  // TODO scrobble
+                  // TODO videojs event hooks
+
                   this.player.play();
 
+                  this.player.on("play", () => {
+                    if (isAuthenticated()) {
+                      Trakt.scrobble.start({
+                        movie: {
+                          ids: {
+                            slug: this.mi[this.getMediaType == "movie" ? 6 : 7],
+                          },
+                        },
+                        progress: this.videoprogress,
+                      });
+                    }
+                  });
+
+                  this.player.on("pause", () => {
+                    if (isAuthenticated()) {
+                      Trakt.scrobble.pause({
+                        movie: {
+                          ids: {
+                            slug: this.mi[this.getMediaType == "movie" ? 6 : 7],
+                          },
+                        },
+                        progress: this.videoprogress,
+                      });
+                    }
+                  });
+
+                  this.player.on("ended", () => {
+                    if (isAuthenticated()) {
+                      Trakt.scrobble.stop({
+                        movie: {
+                          ids: {
+                            slug: this.mi[this.getMediaType == "movie" ? 6 : 7],
+                          },
+                        },
+                        progress: 100,
+                      });
+                    }
+                  });
+
                   ipcRenderer.send("onVideoPlay");
+
                   console.log(this.player);
                 }, 3000); // create suspense... 3 seconds of blackness :)
               }, 100);
@@ -690,10 +746,7 @@ export default {
     z-index: 99;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
     width: 100%;
-    height: 100%;
   }
 }
 </style>
