@@ -90,7 +90,7 @@ export default {
     load(from, to) {
       if (this.config) {
         console.log(from, to);
-        this.loadedloms.push(...this.config.loms.splice(from, to));
+        this.loadedloms.push(...this.config.loms.slice(from, to));
       }
     },
     onScroll() {
@@ -102,7 +102,7 @@ export default {
       }
     },
     userScrolledToBottom() {
-      this.load(0, 3);
+      this.load(this.loadedloms.length, this.loadedloms.length + 3);
     }
   },
   computed: {
