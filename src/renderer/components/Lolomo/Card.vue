@@ -40,6 +40,7 @@
 import { CancelToken, axios } from "../../api/axios";
 import { getFanArt } from "../../api/fanart";
 import { MEDIA, getDetails, getEpisodes } from "../../api/tmdb";
+import Trakt from "../../api/trakt";
 
 export default {
   name: "Card",
@@ -55,6 +56,7 @@ export default {
   data() {
     return {
       backdrop: null,
+      trakt: null,
       details: null,
       progress: null,
       seasons: {},
@@ -94,9 +96,17 @@ export default {
         if (this.media_info.movie) return this.media_info.movie.ids;
         if (this.media_info.show) return this.media_info.show.ids;
       }
+
+      if (this.trakt) {
+        if (this.trakt.movie) return this.trakt.movie.ids;
+        if (this.trakt.show) return this.trakt.show.ids;
+        if (this.trakt.ids) return this.trakt.ids;
+      }
+
       return null;
     },
     trakt_id() {
+      if (this.trakt) return this.trakt_ids.trakt;
       return this.is_trakt ? this.trakt_ids.trakt || this.media_info.id : null;
     },
     tmdb_id() {
@@ -118,7 +128,8 @@ export default {
     },
     media_type() {
       if (this.is_trakt) {
-        if (this.trakt_ids) return this.trakt_ids.tvdb ? MEDIA.Show : MEDIA.Movie;
+        if (this.trakt_ids)
+          return this.trakt_ids.tvdb ? MEDIA.Show : MEDIA.Movie;
       }
       return this.media_info.title ? MEDIA.Movie : MEDIA.Show;
     },
@@ -163,6 +174,8 @@ export default {
           this.media_type,
           encodeURIComponent(this.$props.info.title || this.$props.info.name),
           this.$props.info.release_date,
+          this.trakt_id,
+          this.trakt_ids.slug,
         ]).replace(/\//g, ".")
       );
     },
@@ -176,6 +189,8 @@ export default {
           encodeURIComponent(episode.name),
           episode.air_date,
           `s${episode.season_number}:e${episode.episode_number}`,
+          this.trakt_id,
+          this.trakt_ids.slug,
         ]).replace(/\//g, ".")
       );
     },
@@ -244,6 +259,18 @@ export default {
     },
     fetchDetails() {
       if (this.$props.info.progress) this.progress = this.$props.info.progress;
+
+      if (!this.is_trakt) {
+        Trakt.search
+          .id({
+            id: this.tmdb_id,
+            id_type: "tmdb",
+            type: this.media_type == "tv" ? "show" : "movie",
+          })
+          .then((r) => {
+            this.trakt = r.data[0];
+          });
+      }
 
       getDetails(this.tmdb_id, this.media_type, {
         params: { append_to_response: "images,videos" },
