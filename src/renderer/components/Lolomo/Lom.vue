@@ -29,6 +29,7 @@ import { Swiper, SwiperSlide } from "swiper/vue";
 import Card from "./Card";
 import { stringToTMDB } from "../../api/tmdb";
 import { TraktAPI } from "../../api/trakt";
+import { axios } from "../../api/axios";
 
 export default {
   components: { Card, Swiper, SwiperSlide },
@@ -92,95 +93,27 @@ export default {
       }
     },
     makeInitialRequest() {
+      let requests = [];
+
       this.$props.request.forEach((req) => {
         switch (req.connector) {
           case "tmdb":
-            this.loadFromPromise(
-              stringToTMDB(
-                this.$props.request[0].function,
-                this.$props.request[0].args
-              )
-            );
+            requests.push(stringToTMDB(req.function, req.args));
             break;
-
           case "trakt":
-            this.loadFromPromise(
-              TraktAPI(
-                this.$props.request[0].function,
-                this.$props.request[0].args
-              )
-            );
+            requests.push(TraktAPI(req.function, req.args));
             break;
         }
       });
+
+      this.loadFromPromise(axios.all(requests));
     },
-    loadFromPromise(promise) {
-      // TODO adapt
-      if (promise) {
-        promise.then((r) => {
-          if (Array.isArray(r)) {
-            // Multi-request
-            // Array containing multiple promise results
-
-            // TODO
-
-            /* r.forEach((result) => {
-              this.loadFromResult(() =>
-                result.map((data) => {
-                  return (data.results || data).map((results) => {
-                    return results.filter((item) => {
-                      var isDuplicate = false;
-
-                      this.list.forEach((otherResult) => {
-                        if (otherResult == result) return;
-                        const otherData =
-                          otherResult.data.results || otherResult.data;
-
-                        otherData.forEach((otherItem) => {
-                          console.log(item.id, otherItem.id);
-                          isDuplicate = otherItem.id == item.id;
-                        });
-                        if (isDuplicate) console.log(item);
-                      });
-                      return !isDuplicate;
-                    });
-                  });
-                })
-              );
-            }); */
-
-            /* var lists = r;
-            lists = lists.map((result) => {
-              const results = result.data.results || result.data;
-
-              // TODO this seems very resource intense. Find a better way to do it.
-              return results.filter(cItem => {
-                var isDuplicate = false;
-
-                // Get all other objects in results
-                lists.forEach((otherResult) => {
-                  if (otherResult == result) return;
-                  
-                  const otherData = otherResult.data.results || otherResult.data;
-                  otherData.forEach(oItem => {
-                    isDuplicate = oItem.id === cItem.id;
-                  })
-
-                  if (isDuplicate) console.log("Removing", cItem);
-                });
-
-                return !isDuplicate;
-              });
-            }); */
-
-            // TODO sort list
-            this.list = this.list.sort(
-              (a, b) => b.vote_average - a.vote_average
-            );
-          } else {
-            // Single request promise result
-            this.replaceList(r);
-          }
+    loadFromPromise(promises) {
+      if (promises) {
+        promises.then((result) => {
+          result.forEach((response) => {
+            this.addToList(response.data.results || response.data);
+          });
         });
       }
     },
@@ -188,10 +121,7 @@ export default {
       this.addToList(result);
     },
     addToList(items) {
-      this.list = [...this.list, ...(items.data.results || items.data)];
-    },
-    replaceList(items) {
-      this.list = items.data.results || items.data;
+      this.list.push(...items);
     },
     sortList(cb) {
       this.list.sort(cb);
@@ -199,9 +129,9 @@ export default {
   },
   watch: {
     "$props.request": {
-      handler: function(to) {
+      handler: function (to) {
         this.makeInitialRequest();
-      }
+      },
     },
   },
   created() {

@@ -42,11 +42,6 @@ const swiperDefaults = {
       slidesPerGroup: 7,
       spaceBetween: 8,
     },
-    2560: {
-      slidesPerView: 8,
-      slidesPerGroup: 8,
-      spaceBetween: 8,
-    },
   },
 };
 
@@ -64,10 +59,54 @@ const sectionConfig = {
 
   loms: [
     {
-      listName: "New Releases",
+      listName: "Recommendations",
+      request: [
+        {
+          connector: "trakt",
+          function: "recommendations.movies.get",
+        },
+        {
+          connector: "trakt",
+          function: "recommendations.shows.get",
+        }
+      ],
       config: {
         popover: true,
       },
+      swiperOptions: swiperDefaults,
+    },
+    {
+      listName: "Now Playing",
+      config: {
+        popover: true,
+      },
+      request: [
+        {
+          connector: "tmdb",
+          function: "movies_now_playing",
+        },
+        {
+          connector: "tmdb",
+          function: "on_the_air",
+        }
+      ],
+      swiperOptions: swiperDefaults,
+    },
+    {
+      listName: "Continue Watching",
+      request: [
+        {
+          connector: "trakt",
+          function: "sync.playback.get",
+        },
+      ],
+      config: {
+        showProgressbar: true,
+      },
+      swiperOptions: swiperDefaults,
+    },
+    {
+      listName: "Movies to Consider",
       request: [
         {
           connector: "tmdb",
@@ -83,23 +122,161 @@ const sectionConfig = {
         {
           connector: "tmdb",
           function: "discover",
-          args: [
-            MEDIA.Show
-          ]
-        }
+          args: [MEDIA.Show],
+        },
       ],
       swiperOptions: swiperDefaults,
     },
     {
-      listName: "test",
+      listName: "Top-Rated Anime1",
       request: [
         {
           connector: "tmdb",
-          function: "multi",
+          function: "discover",
           args: [
-            {function: "discover"},
-            {function: "discover", args: [MEDIA.Show]}
-          ]
+            MEDIA.Show,
+            {
+              params: {
+                with_genre: 16,
+                with_origin_country: "JP",
+                "air_date.gte": "2020-04-28",
+                "air_date.lte": "2021-04-28",
+                "vote_count.gte": 100,
+              },
+            },
+          ],
+        },
+      ],
+      swiperOptions: swiperDefaults,
+    },
+    {
+      listName: "Top-Rated Anime2",
+      request: [
+        {
+          connector: "tmdb",
+          function: "discover",
+          args: [
+            MEDIA.Show,
+            {
+              params: {
+                with_genre: 16,
+                with_origin_country: "JP",
+                "air_date.gte": "2020-04-28",
+                "air_date.lte": "2021-04-28",
+                "vote_count.gte": 100,
+              },
+            },
+          ],
+        },
+      ],
+      swiperOptions: swiperDefaults,
+    },
+    {
+      listName: "Top-Rated Anime3",
+      request: [
+        {
+          connector: "tmdb",
+          function: "discover",
+          args: [
+            MEDIA.Show,
+            {
+              params: {
+                with_genre: 16,
+                with_origin_country: "JP",
+                "air_date.gte": "2020-04-28",
+                "air_date.lte": "2021-04-28",
+                "vote_count.gte": 100,
+              },
+            },
+          ],
+        },
+      ],
+      swiperOptions: swiperDefaults,
+    },
+    {
+      listName: "Top-Rated Anime4",
+      request: [
+        {
+          connector: "tmdb",
+          function: "discover",
+          args: [
+            MEDIA.Show,
+            {
+              params: {
+                with_genre: 16,
+                with_origin_country: "JP",
+                "air_date.gte": "2020-04-28",
+                "air_date.lte": "2021-04-28",
+                "vote_count.gte": 100,
+              },
+            },
+          ],
+        },
+      ],
+      swiperOptions: swiperDefaults,
+    },
+    {
+      listName: "Top-Rated Anime5",
+      request: [
+        {
+          connector: "tmdb",
+          function: "discover",
+          args: [
+            MEDIA.Show,
+            {
+              params: {
+                with_genre: 16,
+                with_origin_country: "JP",
+                "air_date.gte": "2020-04-28",
+                "air_date.lte": "2021-04-28",
+                "vote_count.gte": 100,
+              },
+            },
+          ],
+        },
+      ],
+      swiperOptions: swiperDefaults,
+    },
+    {
+      listName: "Top-Rated Anime6",
+      request: [
+        {
+          connector: "tmdb",
+          function: "discover",
+          args: [
+            MEDIA.Show,
+            {
+              params: {
+                with_genre: 16,
+                with_origin_country: "JP",
+                "air_date.gte": "2020-04-28",
+                "air_date.lte": "2021-04-28",
+                "vote_count.gte": 100,
+              },
+            },
+          ],
+        },
+      ],
+      swiperOptions: swiperDefaults,
+    },
+    {
+      listName: "Top-Rated Anime7",
+      request: [
+        {
+          connector: "tmdb",
+          function: "discover",
+          args: [
+            MEDIA.Show,
+            {
+              params: {
+                with_genre: 16,
+                with_origin_country: "JP",
+                "air_date.gte": "2020-04-28",
+                "air_date.lte": "2021-04-28",
+                "vote_count.gte": 100,
+              },
+            },
+          ],
         },
       ],
       swiperOptions: swiperDefaults,
@@ -127,17 +304,69 @@ const sectionConfig = {
       swiperOptions: swiperDefaults,
     },
     {
-      listName: "Continue Watching",
+      listName: "Top-Rated Anime",
       request: [
         {
-          connector: "trakt",
-          function: "sync.playback.get",
+          connector: "tmdb",
+          function: "discover",
+          args: [
+            MEDIA.Show,
+            {
+              params: {
+                with_genre: 16,
+                with_origin_country: "JP",
+                "air_date.gte": "2020-04-28",
+                "air_date.lte": "2021-04-28",
+                "vote_count.gte": 100,
+              },
+            },
+          ],
         },
       ],
-      config: {
-        showProgressbar: true,
-        cardOrientation: "7x10",
-      },
+      swiperOptions: swiperDefaults,
+    },
+    {
+      listName: "Top-Rated Anime",
+      request: [
+        {
+          connector: "tmdb",
+          function: "discover",
+          args: [
+            MEDIA.Show,
+            {
+              params: {
+                with_genre: 16,
+                with_origin_country: "JP",
+                "air_date.gte": "2020-04-28",
+                "air_date.lte": "2021-04-28",
+                "vote_count.gte": 100,
+              },
+            },
+          ],
+        },
+      ],
+      swiperOptions: swiperDefaults,
+    },
+    {
+      listName: "Top-Rated Anime",
+      request: [
+        {
+          connector: "tmdb",
+          function: "discover",
+          args: [
+            MEDIA.Show,
+            {
+              params: {
+                with_genre: 16,
+                with_origin_country: "JP",
+                "air_date.gte": "2020-04-28",
+                "air_date.lte": "2021-04-28",
+                "vote_count.gte": 100,
+              },
+            },
+          ],
+        },
+      ],
       swiperOptions: swiperDefaults,
     },
     /*{

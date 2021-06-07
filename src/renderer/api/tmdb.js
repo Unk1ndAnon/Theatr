@@ -30,44 +30,27 @@ export const SEARCH = {
 };
 
 export function stringToTMDB(name, args = []) {
-  var promises = [];
+  var promise = null;
 
   switch (name) {
-    case "multi":
-      args.forEach((req) => {
-        promises.push(stringToTMDB(req.function, req.args));
-      });
-      break;
-
     case "search":
-      promises.push(search(...args));
-      console.log(promises[0]);
-      break;
-
-    case "getEpisodes":
-      promises.push(getEpisodes(...args));
-      break;
-
-    case "getDetails":
-      promises.push(getDetails(...args));
-      break;
+      return search(...args);
 
     case "discover":
-      promises.push(discover(...args));
-      break;
+      return discover(...args);
+
+    case "movies_now_playing":
+      return movies_now_playing(...args);
+
+    case "on_the_air":
+      return on_the_air(...args);
 
     case "trending":
-      promises.push(trending(...args));
-      break;
+      return trending(...args);
 
     default:
       return null;
   }
-  return promises.length > 1 ? multi(promises) : promises[0];
-}
-
-export function multi(promises) {
-  return axios.all(promises);
 }
 
 export function getEpisodes(id, season_number, episode_number, options) {
@@ -95,8 +78,14 @@ export function trending(time_window = WINDOW.Week, options = {}) {
   return _api.get(`/trending/all/${time_window}`, options);
 }
 
+/*
+ *  TV
+ */
+export function on_the_air(options = {}) {
+  return _api.get("/tv/on_the_air", options);
+}
+
 export function search(query, search = SEARCH.Multi, options = {}) {
-  console.log("Searching", query);
   return _api.get(`/search/${search}`, {
     params: { query: query },
     ...options,

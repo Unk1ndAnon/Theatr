@@ -3,7 +3,7 @@
 
   <div :class="`lom-rowcontainer ${config.billboard ? 'with-billboard' : ''}`">
     <Lom
-      v-for="lom in config.loms"
+      v-for="lom in loadedloms"
       :key="lom.listName"
       v-bind="lom"
       @card-popover="onCardPopover($event)"
@@ -34,12 +34,19 @@ export default {
     "$route.params"(to, from) {
       this.setConfig();
     },
+    "isatbottom"(to, from) {
+      if (to == true) {
+        this.userScrolledToBottom();
+      }
+    },
   },
   data() {
     return {
       popover: [false],
       config: null,
+      loadedloms: [],
       searchCancelToken: CancelToken.source(),
+      isatbottom: false,
     };
   },
   methods: {
@@ -76,12 +83,27 @@ export default {
           return require("../../views/Browse/movies.js").default;
         case "tv":
           return require("../../views/Browse/tvshows.js").default;
-        case "search":
-          return require("../../views/Browse/search.js").default;
         default:
           return require("../../views/Browse/default.js").default;
       }
     },
+    load(from, to) {
+      if (this.config) {
+        console.log(from, to);
+        this.loadedloms.push(...this.config.loms.splice(from, to));
+      }
+    },
+    onScroll() {
+      //console.log(window.innerHeight, window.pageYOffset, document.body.offsetHeight);
+      if (window.innerHeight + window.pageYOffset >= (document.body.offsetHeight - 64)) {
+        this.isatbottom = true;
+      } else {
+        this.isatbottom = false;
+      }
+    },
+    userScrolledToBottom() {
+      this.load(0, 3);
+    }
   },
   computed: {
     getSection() {
@@ -94,6 +116,14 @@ export default {
   created() {
     this.setConfig();
   },
-  updated() {},
+  mounted() {
+    // Load the first x Loms on load
+    this.load(0, 5);
+
+    window.addEventListener("scroll", this.onScroll);
+  },
+  beforeUnmount() {
+    window.removeEventListener("scroll", this.onScroll);
+  },
 };
 </script>

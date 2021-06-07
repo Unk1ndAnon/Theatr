@@ -1,4 +1,15 @@
 import store from "../store";
+import { axios, cache } from "./axios";
+
+const _api = axios.create({
+  adapter: cache.adapter,
+  baseURL: "https://api.tmdb.org/3/",
+  timeout: 15000,
+  params: {
+    api_key: "205c5906f1be7842b0bf97875e23f54c",
+    language: "en",
+  },
+});
 
 const TraktTV = require("trakt.tv");
 
@@ -38,6 +49,10 @@ export function TraktAPI(func, args = {}) {
       return isAuthenticated() ? Trakt.sync.history.get(args) : null;
     case "sync.playback.get":
       return isAuthenticated() ? Trakt.sync.playback.get(args) : null;
+    case "recommendations.movies.get":
+      return isAuthenticated() ? Trakt.recommendations.movies.get(args) : null;
+    case "recommendations.shows.get":
+      return isAuthenticated() ? Trakt.recommendations.shows.get(args) : null;
 
     default:
       return null;
