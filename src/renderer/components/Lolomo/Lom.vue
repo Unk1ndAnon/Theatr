@@ -112,7 +112,7 @@ export default {
       if (promises) {
         promises.then((result) => {
           result.forEach((response) => {
-            this.addToList(response.data.results || response.data);
+            if (response) this.addToList(response.data.results || response.data);
           });
         });
       }
