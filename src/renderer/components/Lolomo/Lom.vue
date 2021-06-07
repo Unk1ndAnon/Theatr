@@ -1,9 +1,6 @@
 <template>
-  <div
-    :class="'lom-row ' + (bbpresent ? 'with-billboard' : '')"
-    v-if="list.length > 0"
-  >
-    <div class="title" v-if="listName">
+  <div :class="'lom-row ' + (bbpresent ? 'with-billboard' : '')">
+    <div class="title" v-if="listName" v-show="list.length > 0">
       <h3>{{ listName }}</h3>
     </div>
 
@@ -12,6 +9,7 @@
       v-bind="swiperOptions"
       @reachEnd="loadNextPage"
       ref="slider"
+      v-show="list.length > 0"
     >
       <swiper-slide v-for="item in list" :key="item.id">
         <Card
@@ -21,6 +19,10 @@
         />
       </swiper-slide>
     </swiper>
+
+    <div class="message" v-show="error">
+      {{error}}
+    </div>
   </div>
 </template>
 
@@ -39,6 +41,7 @@ export default {
       pagesLoaded: 0,
       totalPages: 0,
       list: [],
+      error: null,
     };
   },
   props: {

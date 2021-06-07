@@ -87,7 +87,7 @@ export function on_the_air(options = {}) {
 
 export function search(query, search = SEARCH.Multi, options = {}) {
   return _api.get(`/search/${search}`, {
-    params: { query: query },
-    ...options,
+    params: Object.assign(options.params, { query: query }),
+    ...options
   });
 }

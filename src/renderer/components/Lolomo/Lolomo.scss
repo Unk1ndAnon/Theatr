@@ -70,7 +70,6 @@
                 .theatr-trailer.playing {
                     opacity: 1;
                 }
-
             }
 
             .image-wrapper {
@@ -153,14 +152,14 @@
 
                                 img.title-logo {
                                     width: 100%;
-                                    font-size: 2.25vw;
+                                    font-size: 2vw;
                                     font-weight: 700;
                                 }
                             }
                         }
 
                         .info-wrapper {
-                            font-size: 1.4vw;
+                            font-size: 1.2vw;
                             text-shadow: rgb(0, 0, 0) 2px 2px 4px;
 
                             .episode-title-container {}
@@ -207,7 +206,7 @@
 }
 
 .with-billboard {
-    top: -12vw;
+    top: -12.5vw;
 }
 
 .lom-rowcontainer {
@@ -215,7 +214,7 @@
 
     div.lom-row {
         position: relative;
-        margin: 0 0 2vw 0;
+        margin: 1vw 0;
         z-index: 1;
         padding: 0;
 
@@ -223,7 +222,7 @@
         .title h3 {
             line-height: 1.5em;
             margin: 0 0 .5em 0;
-            margin-left: 6%;
+            margin-left: 4%;
         }
 
         .swiper-container {
