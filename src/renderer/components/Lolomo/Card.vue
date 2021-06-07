@@ -20,7 +20,7 @@
         :class="isLoading ? 'pulse' : ''"
         :style="{ 'background-image': fallbackBackdropStyle }"
       >
-        <p class="fallback-text" v-if="!isLoading">{{ getMediaTitle }}</p>
+        <p class="fallback-text" v-if="!isLoading">{{ media_title }}</p>
       </div>
     </div>
 
@@ -54,7 +54,6 @@ export default {
   },
   data() {
     return {
-      sourcedFromTrakt: null,
       backdrop: null,
       details: null,
       progress: null,
@@ -73,33 +72,55 @@ export default {
   },
   emits: ["card-popover"],
   watch: {
-    details: ["loadFanArt", "loadSeasonEpisodes"],
+    details: ["loadFanArt", "fetchSeasonEpisodes"],
     isHovering: ["onHover"],
   },
   computed: {
-    id() {
-      console.log(this.$props);
-      return this.sourcedFromTrakt
-        ? this.$props.info.movie.ids.tmdb || this.$props.info.show.ids.tmdb
-        : this.$props.info.id;
+    card_config() {
+      return this.$props.config;
     },
-    traktId() {
-      return this.sourcedFromTrakt ? this.$props.info.id : null;
+    media_info() {
+      return this.$props.info;
     },
-    language() {
+    is_trakt() {
+      // Check for the existence of keys unique to Trakt.TV API responses.
+      return (
+        this.media_info.ids || this.media_info.movie || this.media_info.show
+      );
+    },
+    trakt_ids() {
+      if (this.is_trakt) {
+        if (this.media_info.ids) return this.media_info.ids;
+        if (this.media_info.movie) return this.media_info.movie.ids;
+        if (this.media_info.show) return this.media_info.show.ids;
+      }
+      return null;
+    },
+    trakt_id() {
+      return this.is_trakt ? this.trakt_ids.trakt || this.media_info.id : null;
+    },
+    tmdb_id() {
+      return this.is_trakt ? this.trakt_ids.tmdb : this.media_info.id;
+    },
+    application_language() {
       return this.$store.state.ISO639;
     },
-    getMediaTitle() {
-      if (this.sourcedFromTrakt)
-        return this.$props.info.movie.title || this.$props.info.show.title;
-      return this.$props.info.title || this.$props.info.name;
-    },
-    getMediaType() {
-      if (this.sourcedFromTrakt) {
-        if (this.$props.info.type == "episode") return MEDIA.Show;
-        return this.$props.info.type;
+    media_title() {
+      if (this.media_info.title) return this.media_info.title;
+      if (this.media_info.name) return this.media_info.name;
+
+      if (this.is_trakt) {
+        if (this.media_info.movie) return this.media_info.movie.title;
+        if (this.media_info.show) return this.media_info.show.title;
       }
-      return this.$props.info.title ? MEDIA.Movie : MEDIA.Show;
+
+      return null;
+    },
+    media_type() {
+      if (this.is_trakt) {
+        if (this.trakt_ids) return this.trakt_ids.tvdb ? MEDIA.Show : MEDIA.Movie;
+      }
+      return this.media_info.title ? MEDIA.Movie : MEDIA.Show;
     },
     getOrientation() {
       return this.$props.config.cardOrientation || "16x9";
@@ -137,9 +158,9 @@ export default {
       // replaced with periods (.)
       return encodeURIComponent(
         btoa([
-          this.id,
+          this.tmdb_id,
           this.details ? this.details.imdb_id : "",
-          this.getMediaType,
+          this.media_type,
           encodeURIComponent(this.$props.info.title || this.$props.info.name),
           this.$props.info.release_date,
         ]).replace(/\//g, ".")
@@ -149,9 +170,9 @@ export default {
       const episode = this.selectedEpisode || this.seasons[1].episodes[0];
       return encodeURIComponent(
         btoa([
-          this.id,
+          this.tmdb_id,
           null,
-          this.getMediaType,
+          this.media_type,
           encodeURIComponent(episode.name),
           episode.air_date,
           `s${episode.season_number}:e${episode.episode_number}`,
@@ -159,7 +180,7 @@ export default {
       );
     },
     getWatchLink() {
-      if (this.getMediaType == MEDIA.Show) {
+      if (this.media_type == MEDIA.Show) {
         return `/watch/${this.getEncodedInfoForEpisode}`;
       } else {
         return `/watch/${this.getEncodedInfo}`;
@@ -184,9 +205,9 @@ export default {
       };
     },
     debug() {
-      console.log(this.getMediaTitle, this.details);
+      console.log(this.media_title, this.details);
       console.log("Backdrop", this.backdrop);
-      console.log("Media Type", this.getMediaType);
+      console.log("Media Type", this.media_type);
       console.log("Episodes", this.seasons);
       console.log("Fanart", this.fanart);
     },
@@ -224,24 +245,12 @@ export default {
     fetchDetails() {
       if (this.$props.info.progress) this.progress = this.$props.info.progress;
 
-      getDetails(
-        this.sourcedFromTrakt
-          ? this.$props.info.movie.ids.tmdb
-          : this.$props.info.id,
-        this.getMediaType,
-        {
-          params: { append_to_response: "images,videos" },
-          cancelToken: this.cancelTokens.details.token,
-        }
-      )
+      getDetails(this.tmdb_id, this.media_type, {
+        params: { append_to_response: "images,videos" },
+        cancelToken: this.cancelTokens.details.token,
+      })
         .then((r) => {
           this.details = r.data;
-
-          if (this.getMediaType == MEDIA.Show) {
-            r.data.seasons.forEach((s) => {
-              this.loadSeasonEpisodes(s.season_number);
-            });
-          }
 
           // Sort backdrops by vote_count (vote_average as returned by API)
           const backdrops = (
@@ -267,25 +276,27 @@ export default {
           if (axios.isCancel(e)) {
             console.log("Cancelled");
           } else {
-            console.log(this.$props.info.id, this.getMediaType, this.$props);
+            console.log(this.tmdb_id, this.media_type, this.$props);
             console.error("Error", e);
           }
         });
     },
-    loadSeasonEpisodes(season_number) {
-      // Get basic episode details
-      getEpisodes(this.$props.info.id, season_number, null, {
-        cancelToken: this.cancelTokens.episodes.token,
-      }).then((r) => {
-        // Add to this.seasons array under season number as key
-        this.seasons[season_number] = r.data;
-      });
+    fetchSeasonEpisodes() {
+      if (this.media_type == MEDIA.Show) {
+        this.details.seasons.forEach((s) => {
+          getEpisodes(this.tmdb_id, s.season_number, null, {
+            cancelToken: this.cancelTokens.episodes.token,
+          }).then((r) => {
+            this.seasons[s.season_number] = r.data;
+          });
+        });
+      }
     },
     loadFanArt() {
       // Create cancel token
       this.fanart = getFanArt(
         this.details.imdb_id || this.details.id,
-        this.getMediaType,
+        this.media_type,
         { cancelToken: this.cancelTokens.fanart.token }
       )
         .then((r) => {
@@ -306,22 +317,13 @@ export default {
             }
           }
         })
-        .catch((e) => {
-          if (axios.isCancel(e)) {
-            console.log("Cancelled");
-          } else {
-            //console.log(this.$props.info.id, this.getMediaType, this.$props);
-            //console.error("Error", e);
-          }
-        });
+        .catch((e) => {});
     },
     stopLoading() {
       this.isLoading = false;
     },
   },
-  created() {
-    this.sourcedFromTrakt = this.$props.info.type ? true : false;
-
+  mounted() {
     this.fetchDetails();
 
     setTimeout(() => {
