@@ -12,7 +12,7 @@
     "postinstall": "electron-builder install-app-deps",
     "postuninstall": "electron-builder install-app-deps"
   },
-  "main": "renderer/index.js",
+  "main": "background.js",
   "dependencies": {
     "@electron/remote": "^1.1.0",
     "@ffmpeg/ffmpeg": "^0.10.0",
