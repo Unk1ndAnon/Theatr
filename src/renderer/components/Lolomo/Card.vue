@@ -30,7 +30,7 @@
       }`"
     >
       <span class="progress-bar">
-        <progress :value="progress" max="100" />
+        <progress :value="Number(progress).toFixed(0)" max="100" />
       </span>
     </div>
   </a>
@@ -176,6 +176,7 @@ export default {
           this.$props.info.release_date,
           this.trakt_id,
           this.trakt_ids.slug,
+          this.progress || null,
         ]).replace(/\//g, ".")
       );
     },
@@ -191,6 +192,7 @@ export default {
           `s${episode.season_number}:e${episode.episode_number}`,
           this.trakt_id,
           this.trakt_ids.slug,
+          this.progress || null,
         ]).replace(/\//g, ".")
       );
     },
