@@ -6,11 +6,12 @@
   >
     <div class="fill-container">
       <div class="info">
-        <div class="logo-and-text" v-if="this.details">
+        <div class="logo-and-text" v-show="this.details">
           <div class="title-wrapper">
             <div class="billboard-title">
               <img
-                class="title-logo"
+                class="title-logo hidden"
+                ref="titlelogo"
                 :src="getLogo()"
                 :alt="info.title || info.name"
               />
@@ -25,14 +26,14 @@
               {{ this.details.number_of_seasons || 0 }} Seasons :
               {{ this.details.number_of_episodes || 0 }} Episodes
             </div>
-            <div class="synopsis-container">
+            <div class="synopsis-container hidden" ref="synopsis">
               <div class="synopsis" v-if="this.details">
-                {{ this.details.tagline || info.overview }}
+                {{ this.details.tagline || info.overview.split(".")[0] + "." }}
               </div>
             </div>
           </div>
 
-          <div class="billboard-links">
+          <div class="billboard-links hidden" ref="linkscontainer">
             <button class="btn-play" @click="onPlayClick">Play</button>
             <button class="btn-info">Info</button>
           </div>
@@ -287,7 +288,19 @@ export default {
   created() {
     this.fetchDetails();
   },
-  mounted() {},
+  mounted() {
+    console.log(this.$refs);
+
+    this.$refs.titlelogo.onload = () => {
+      this.$refs.titlelogo.classList.remove("hidden");
+      this.$refs.synopsis.classList.remove("hidden");
+      this.$refs.linkscontainer.classList.remove("hidden");
+
+      this.$refs.titlelogo.classList.add("untranslate");
+      this.$refs.synopsis.classList.add("untranslate");
+      this.$refs.linkscontainer.classList.add("untranslate");
+    };
+  },
   beforeUnmount() {
     if (this.player) {
       try {
