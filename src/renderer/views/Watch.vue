@@ -10,7 +10,22 @@
       v-show="loading"
     />
 
-    <div class="overlay"><button @click="goBack">Go Back</button></div>
+    <div
+      class="overlay"
+      ref="overlay"
+      @mouseenter="overlayShow"
+      @mouseleave="overlayHide"
+    >
+      <div class="overlay-loading" v-if="loading">
+        <button @click="goBack">Back</button>
+        <h1>{{ getMediaTitle }}</h1>
+      </div>
+
+      <div class="overlay-watching" v-if="!loading">
+        <button @click="goBack">Browse</button>
+        <h1>{{ getMediaTitle }}</h1>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -31,7 +46,9 @@ export default {
   name: "Watch",
   data() {
     return {
-      mi: null,
+      mi: atob(
+        decodeURIComponent(this.$route.params.mi).replace(/\./g, "/")
+      ).split(","),
       backdrops: [],
       current_backdrop: 0,
       backdrop_interval: null,
@@ -72,7 +89,9 @@ export default {
       },
     },
     getMediaTitle() {
-      return this.details.title || this.details.name || this.mi[2];
+      return this.details
+        ? this.details.title || this.details.name
+        : this.mi[2];
     },
     getMediaType() {
       return this.mi[2];
@@ -83,8 +102,17 @@ export default {
       // Get the video player progress as a percentage with maximum
       // 2 decimal points.
       if (this.player)
-        ((this.player.currentTime() / this.player.duration()) * 100).toFixed(2);
+        return (
+          (this.player.currentTime() / this.player.duration()) *
+          100
+        ).toFixed(2);
       return 0;
+    },
+    overlayShow() {
+      this.$refs.overlay.classList.remove("hidden");
+    },
+    overlayHide() {
+      if (!this.loading) this.$refs.overlay.classList.add("hidden");
     },
     setStatus(text) {
       console.log("WATCH", text);
@@ -274,9 +302,6 @@ export default {
     fetchDetails() {
       // Decode the `mi` param.
       // This contains basic info on what we want to play.
-      this.mi = atob(
-        decodeURIComponent(this.$route.params.mi).replace(/\./g, "/")
-      ).split(",");
       this.mi[3] = decodeURIComponent(this.mi[3]); // title is double-uri-encoded
 
       this.setStatus("Fetching details...");
@@ -498,6 +523,21 @@ export default {
                   // TODO scrobble
                   // TODO videojs event hooks
 
+                  // TODO resume
+                  if (this.mi[8] || this.mi[7]) {
+                    console.log(this.mi[8], this.mi[7]);
+                    console.log(
+                      "Resuming",
+                      ((this.mi[8] || this.mi[7]) / 100) *
+                        this.player.duration()
+                    );
+                    this.player.currentTime(
+                      ((this.mi[8] || this.mi[7]) / 100) *
+                        this.player.duration() -
+                        15
+                    );
+                  }
+
                   this.player.play();
 
                   this.player.on("play", () => {
@@ -508,7 +548,7 @@ export default {
                             slug: this.mi[this.getMediaType == "movie" ? 6 : 7],
                           },
                         },
-                        progress: this.videoprogress,
+                        progress: this.videoprogress(),
                       });
                     }
                   });
@@ -521,7 +561,7 @@ export default {
                             slug: this.mi[this.getMediaType == "movie" ? 6 : 7],
                           },
                         },
-                        progress: this.videoprogress,
+                        progress: this.videoprogress(),
                       });
                     }
                   });
@@ -648,6 +688,17 @@ export default {
     this.cancelTokens.details.cancel("Operation canceled by lifecycle hook.");
 
     if (this.player) {
+      if (isAuthenticated()) {
+        Trakt.scrobble.pause({
+          movie: {
+            ids: {
+              slug: this.mi[this.getMediaType == "movie" ? 6 : 7],
+            },
+          },
+          progress: this.videoprogress(),
+        });
+      }
+
       try {
         this.player.dispose();
       } catch (e) {
@@ -718,7 +769,7 @@ export default {
   }
 
   .hidden {
-    opacity: 0;
+    opacity: 0 !important;
   }
 
   .show {
@@ -747,6 +798,10 @@ export default {
     top: 0;
     left: 0;
     width: 100%;
+    height: 100%;
+
+    opacity: 1;
+    transition: opacity 0.2s;
   }
 }
 </style>
