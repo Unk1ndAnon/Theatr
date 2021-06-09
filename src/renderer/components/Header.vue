@@ -1,6 +1,6 @@
 <template>
   <div class="pinning-header">
-    <div class="ph-container" :class="pageYOffset >= 24 ? 'scrolled' : ''">
+    <div class="ph-container" :class="pageYOffset >= 1 ? 'scrolled' : ''">
       <div class="main-header" role="navigation">
         <ul class="primary-nav">
           <li class="navigation-tab">
@@ -78,7 +78,7 @@ export default {
     window.addEventListener("scroll", this.windowScrolled);
   },
   mounted() {
-    this.$refs.searchBar.focus()
+    this.$refs.searchBar.focus();
   },
   unmounted() {
     window.removeEventListener("scroll", this.windowScrolled);
