@@ -23,22 +23,16 @@
           </li>
         </ul>
         <div class="secondary-nav">
-          <div class="nav-element">
+          <div class="navigation-element">
             <ProfileImage />
           </div>
 
-          <div class="nav-element">
-            <div class="searchBox">
-              <input
-                type="text"
-                placeholder="Titles, people, genres"
-                v-model="searchField"
-                target="_blank"
-                class="searchBar"
-                ref="searchBar"
-                @input="search"
-              />
-            </div>
+          <div class="navigation-element">
+            <Search
+              placeholder="Titles, people, genres"
+              ref="search"
+              @onInput="onSearchInput"
+            />
           </div>
         </div>
       </div>
@@ -48,40 +42,35 @@
 
 <script>
 import ProfileImage from "./ProfileImage";
+import Search from "./Search";
 
 export default {
   name: "Header",
   components: {
     ProfileImage,
+    Search,
   },
   methods: {
-    focus() {
-      console.log(1);
-      this.$refs.searchBar.focus();
-    },
-    search() {
-      this.searchTerm = this.searchField;
-      this.$router.replace(`/search/${this.searchTerm}`);
-    },
-    windowScrolled() {
-      this.pageYOffset = window.pageYOffset;
+    onSearchInput(input) {
+      this.$router.replace(`/search/${input}`);
     },
   },
   data() {
     return {
-      searchTerm: this.$route.params.searchTerm || null,
       pageYOffset: window.pageYOffset,
     };
   },
   created() {
-    this.searchField = this.$route.params.searchTerm || "";
-    window.addEventListener("scroll", this.windowScrolled);
-  },
-  mounted() {
-    this.$refs.searchBar.focus()
+    window.addEventListener(
+      "scroll",
+      () => (this.pageYOffset = window.pageYOffset)
+    );
   },
   unmounted() {
-    window.removeEventListener("scroll", this.windowScrolled);
+    window.removeEventListener(
+      "scroll",
+      () => (this.pageYOffset = window.pageYOffset)
+    );
   },
 };
 </script>
@@ -125,63 +114,45 @@ export default {
       cursor: pointer;
     }
 
+    .navigation-tab,
+    .navigation-element {
+      margin-left: 10px;
+      margin-right: 10px;
+      font-size: 14px;
+
+      a {
+        outline: 0;
+        text-decoration: none;
+        color: lightgray;
+
+        transition: color 0.2s;
+      }
+      a:hover {
+        color: gray;
+      }
+      a:active {
+        color: dimgray;
+      }
+
+      .active {
+        color: whitesmoke;
+      }
+    }
+
     .primary-nav {
       list-style-type: none;
       display: flex;
-
-      .navigation-tab {
-        margin-left: 20px;
-        font-size: 1.4vh;
-
-        a {
-          outline: 0;
-          text-decoration: none;
-          color: lightgray;
-
-          transition: color 0.2s;
-        }
-        a:hover {
-          color: gray;
-        }
-        a:active {
-          color: dimgray;
-        }
-
-        .active {
-          color: whitesmoke;
-        }
-      }
     }
 
     .secondary-nav {
       position: absolute;
-      right: 0;
+      right: 4%;
+      height: 100%;
       display: flex;
       flex-flow: row-reverse;
 
-      .nav-element {
-        display: inline-flex;
-        vertical-align: middle;
-        align-items: center;
-
-        .searchBox {
-          .searchBar {
-            background: black;
-            color: lightgray;
-            height: 1.75em;
-            border: 1px solid lightgray;
-            border-radius: 4px;
-            outline: 0;
-          }
-        }
-
-        .searchTab {
-          display: inline-block;
-          cursor: pointer;
-          border: none;
-          color: white;
-        }
-      }
+      align-items: center;
+      justify-content: flex-end;
     }
   }
 }

@@ -1,0 +1,20 @@
+.searchBox {
+    display: inline-block;
+    vertical-align: middle;
+    
+    .searchBar {
+        background: black;
+        color: lightgray;
+        border: 1px solid lightgray;
+        border-radius: 4px;
+        outline: 0;
+        height: 1.75em;
+    }
+
+    .searchTab {
+        display: inline-block;
+        cursor: pointer;
+        border: none;
+        color: white;
+    }
+}
