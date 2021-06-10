@@ -154,6 +154,8 @@
                                     width: 100%;
                                     font-size: 2vw;
                                     font-weight: 700;
+                                    transition: opacity 1s, transform 1s;
+                                    transform: translateY(-10%);
                                 }
                             }
                         }
@@ -165,6 +167,9 @@
                             .episode-title-container {}
 
                             div.synopsis-container {
+                                transition: opacity 1s, transform 1s;
+                                transform: translateX(-8%);
+
                                 div.synopsis {
                                     margin: .5vw 0 0 0;
                                 }
@@ -174,6 +179,9 @@
                         .billboard-links {
                             margin-top: 1.5vw;
                             display: flex;
+
+                            transition: opacity 1s, transform 1s;
+                            transform: translateX(-12%);
 
                             button {
                                 cursor: pointer;
@@ -203,6 +211,14 @@
             }
         }
     }
+}
+
+.hidden {
+    opacity: 0;
+}
+
+.untranslate {
+    transform: translate(0) !important;
 }
 
 .with-billboard {

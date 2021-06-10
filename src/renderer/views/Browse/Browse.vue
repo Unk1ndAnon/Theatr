@@ -2,21 +2,22 @@
   <div class="browse">
     <Header />
     <div class="browse-container">
-      <Lolomo :section="section" />
+      <Lolomo :config="sectionConfig" />
     </div>
+    <Footer />
   </div>
 </template>
 
 <script>
+import Footer from '../../components/Footer';
 import Header from "../../components/Header";
 import Lolomo from "../../components/Lolomo/Lolomo";
 
 export default {
   name: "Home",
-  components: { Header, Lolomo },
-  methods: {},
+  components: { Header, Footer, Lolomo },
   computed: {
-    section: {
+    sectionConfig: {
       get() {
         return this.$route.params.section;
       },
@@ -28,7 +29,6 @@ export default {
       },
     },
   },
-  mounted() {},
 };
 </script>
 

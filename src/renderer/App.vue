@@ -4,7 +4,7 @@
 
 <script>
 import store from "./store";
-import Trakt from "./api/trakt";
+import Trakt, { TraktAPI } from "./api/trakt";
 import SwiperCore, { Autoplay, Navigation } from "swiper";
 SwiperCore.use([Autoplay, Navigation]);
 
@@ -24,28 +24,6 @@ export default {
     if (traktAuth) {
       Trakt.import_token(traktAuth).then((r) => {
         store.commit("TraktAuth", Trakt.export_token());
-
-        setTimeout(() => {
-          console.log(
-            Trakt.sync.watched({
-              type: "movies",
-            })
-          );
-
-          // TODO remove this block
-          console.log(Trakt.sync.history.get());
-          console.log(Trakt.sync.last_activities());
-          console.log(Trakt.sync.playback.get());
-
-          Trakt.scrobble.pause({
-            movie: {
-              ids: {
-                slug: "pulp-fiction-1994",
-              },
-            },
-            progress: 1,
-          });
-        }, 5000);
       });
     }
   },

@@ -89,7 +89,6 @@ export default {
     },
     load(from, to) {
       if (this.config) {
-        console.log(from, to);
         this.loadedloms.push(...this.config.loms.slice(from, to));
       }
     },
