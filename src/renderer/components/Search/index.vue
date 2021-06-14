@@ -42,7 +42,6 @@ export default {
   methods: {
     onInput() {
       this.$emit("onInput", this.inputText);
-      console.log(this.input);
     },
     onRouteChange() {
       console.log(1);
