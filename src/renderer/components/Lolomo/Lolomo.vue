@@ -15,7 +15,6 @@
 import Billboard from "./Billboard";
 import Lom from "./Lom";
 import "./Lolomo.scss";
-import { SEARCH, search } from "../../api/tmdb";
 import { CancelToken, axios } from "../../api/axios";
 
 export default {
@@ -25,15 +24,8 @@ export default {
     section: {
       type: String,
     },
-    searchTerm: {
-      type: String,
-      default: "",
-    },
   },
   watch: {
-    "$route.params"(to, from) {
-      this.setConfig();
-    },
     "isatbottom"(to, from) {
       if (to == true) {
         this.userScrolledToBottom();
@@ -45,7 +37,6 @@ export default {
       popover: [false],
       config: null,
       loadedloms: [],
-      searchCancelToken: CancelToken.source(),
       isatbottom: false,
     };
   },
@@ -58,24 +49,6 @@ export default {
     },
     setConfig() {
       this.config = this.getSectionExports(this.getSection);
-
-      if (this.getSection == "search") {
-        // Build the search request based on property values
-
-        this.config.loms[0].request = [
-          {
-            connector: "tmdb",
-            function: "search",
-            args: [
-              this.getSearch,
-              SEARCH.Multi,
-              {
-                cancelToken: this.searchCancelToken.token,
-              },
-            ],
-          },
-        ];
-      }
     },
     getSectionExports(section) {
       switch (section) {
@@ -107,9 +80,6 @@ export default {
   computed: {
     getSection() {
       return this.$props.section;
-    },
-    getSearch() {
-      return this.$route.params.searchTerm || "";
     },
   },
   created() {

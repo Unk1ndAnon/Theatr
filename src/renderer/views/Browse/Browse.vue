@@ -21,12 +21,6 @@ export default {
       get() {
         return this.$route.params.section;
       },
-      set(newSection) {
-        this.$router.push({
-          name: "Browse",
-          params: { section: newSection },
-        });
-      },
     },
   },
 };
