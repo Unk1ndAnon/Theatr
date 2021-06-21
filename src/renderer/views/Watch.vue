@@ -1,29 +1,68 @@
 <template>
-  <div class="watch-container" v-show="details">
+  <div class="watch-container" v-show="details" ref="watchcontainer">
     <video id="videoPlayer" ref="video" class="hidden video-js" />
 
     <img
       :src="getBackdrop(currentBackdrop)"
       ref="backdropElement"
       alt=""
-      class="poster pan"
+      class="poster pan-left"
       v-show="loading"
     />
 
     <div
       class="overlay"
       ref="overlay"
-      @mouseenter="overlayShow"
-      @mouseleave="overlayHide"
     >
       <div class="overlay-loading" v-if="loading">
         <button @click="goBack">Back</button>
-        <h1>{{ getMediaTitle }}</h1>
+
+        <div class="status">
+          {{statusText}}
+          <span class="dlspeed" v-if="client">{{client.downloadSpeed / 1024}} KB/s {{torrent ? " from " + torrent.numPeers + `peer${this.numPeers == 1 ? "" : "s"}` : ""}}</span>
+        </div>
       </div>
 
-      <div class="overlay-watching" v-if="!loading">
-        <button @click="goBack">Browse</button>
-        <h1>{{ getMediaTitle }}</h1>
+      <div
+        class="overlay-watching"
+        v-if="!loading"
+        @click="togglePlay"
+        @dblclick="toggleFullscreen"
+        @mouseenter="overlayShow"
+        @mouseleave="overlayHide"
+      >
+        <div class="control-back">
+          <button @click="goBack">Back</button>
+        </div>
+
+        <div class="control-trackbar">
+          <progress
+            class="trackbar"
+            :value="videocurrenttime"
+            :max="videoduration"
+          />
+
+          <div class="trackbar-controls">
+            <div class="primary-controls">
+              <button class="playpause">p</button>
+              <button class="rewind">r</button>
+              <button class="forward">f</button>
+              <button class="volume">v</button>
+              <div class="meta-info">
+                {{ getMediaTitle }}
+                <div class="episode-meta"></div>
+              </div>
+            </div>
+
+            <div class="secondary-controls">
+              <button class="queue-next">n</button>
+              <button class="episode-select">e</button>
+              <button class="settings">s</button>
+              <button class="magnify">m</button>
+              <button class="fullscreen-toggle">+</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -96,30 +135,79 @@ export default {
     getMediaType() {
       return this.mi[2];
     },
+    videoduration() {
+      if (this.player) {
+        console.log(this.player.duration());
+        return this.player.duration();
+      }
+      return 0;
+    },
+    videocurrenttime() {
+      if (this.player) {
+        console.log(this.player.currentTime());
+        return this.player.currentTime();
+      }
+      return 0;
+    },
   },
   methods: {
     videoprogress() {
       // Get the video player progress as a percentage with maximum
       // 2 decimal points.
       if (this.player)
-        return (
-          (this.player.currentTime() / this.player.duration()) *
-          100
-        ).toFixed(2);
+        return ((this.videocurrenttime / this.videoduration) * 100).toFixed(2);
       return 0;
     },
+    onMouseMove() {
+      if (this.overlayhidden) {
+        this.overlayShow();
+      } else {
+        clearTimeout(this.hovertimeout);
+        this.hovertimeout = setTimeout(() => {
+          this.overlayHide();
+        }, 3000);
+      }
+    },
     overlayShow() {
+      this.overlayhidden = false;
+      document.body.style.cursor = "auto";
       this.$refs.overlay.classList.remove("hidden");
+      document.addEventListener("mousemove", this.onMouseMove, false);
     },
     overlayHide() {
+      this.overlayhidden = true;
+      document.body.style.cursor = "none";
       if (!this.loading) this.$refs.overlay.classList.add("hidden");
+      if (this.player) {
+        if (!this.player.isPlaying) {
+          setTimeout(() => {
+            // Display movie meta info
+          }, 5000);
+        }
+      }
+    },
+    toggleFullscreen() {
+      if (document.fullscreenEnabled) {
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else {
+          this.$refs.watchcontainer.requestFullscreen();
+        }
+      }
+    },
+    togglePlay() {
+      if (this.player) {
+        if (!this.player.paused) this.player.pause();
+        else this.player.play();
+      }
     },
     setStatus(text) {
       console.log("WATCH", text);
       this.statusText = text;
     },
     goBack() {
-      this.$router.back();
+      if (this.$router.options.history.state.back) this.$router.back();
+      else this.$router.push("/browse");
     },
     fetchSources() {
       this.setStatus("Searching for sources...");
@@ -348,9 +436,11 @@ export default {
 
       if (source.startsWith("http")) {
         // Download
+        this.setStatus("Downloading");
         const http = require("http");
         http.get(source, (r) => {
           if (r.headers.location.startsWith("magnet"))
+            this.setStatus("Downloaded torrent file");
             this.magnet = r.headers.location;
         });
       } else {
@@ -393,6 +483,9 @@ export default {
           t.on("done", () => {
             console.log("torrent", "done"); // TODO remove
             t.pause();
+          });
+          t.on("wire", (w) => {
+            console.log("torrent", "wire", w);
           });
 
           this.torrent = t;
@@ -647,7 +740,7 @@ export default {
         if (this.loading && this.$refs.backdropElement) {
           // hide
           this.$refs.backdropElement.classList.remove("show");
-          this.$refs.backdropElement.classList.add("hidden", "fade");
+          this.$refs.backdropElement.classList.add("hidden", "fade", "zoomed");
           setTimeout(() => {
             console.log("Changing backdrop"); // TODO remove
 
@@ -655,6 +748,19 @@ export default {
               this.currentBackdrop = 0; // reset
             } else {
               this.currentBackdrop++;
+            }
+
+            // Switch pan directions
+            if (this.$refs.backdropElement) {
+              let classList = this.$refs.backdropElement.classList;
+
+              if (classList.contains("pan-left")) {
+                classList.remove("pan-left");
+                classList.add("pan-right");
+              } else if (classList.contains("pan-right")) {
+                classList.remove("pan-right");
+                classList.add("pan-left");
+              }
             }
 
             setTimeout(() => {
@@ -666,7 +772,7 @@ export default {
             }, 3000);
           }, 2100);
         }
-      }, 15000); // 45 seconds
+      }, 45000); // 45 seconds
     },
     onClose() {
       // TODO go back if possible without reload, else go to /browse
@@ -747,15 +853,33 @@ export default {
     height: 100%;
   }
 
-  @keyframes Pan {
+  @keyframes Zoom {
     0% {
-      transform: scale(1.1);
+      transform: scale(1);
     }
     50% {
       transform: scale(1.3);
     }
     100% {
-      transform: scale(1.1);
+      transform: scale(1);
+    }
+  }
+
+  @keyframes PanLeft {
+    0% {
+      transform: translateX(-15%);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes PanRight {
+    0% {
+      transform: translateX(15%);
+    }
+    100% {
+      transform: translateX(0);
     }
   }
 
@@ -777,19 +901,39 @@ export default {
   }
 
   .fade {
-    transition: opacity 2s;
+    transition: opacity 2s, transform 2s;
   }
 
   .poster {
     position: absolute;
     z-index: 2;
-    height: 100%;
-    width: 100%;
     object-fit: cover;
+
+    width: 100%;
+    height: 100%;
+    overflow: visible;
   }
 
-  .pan {
-    animation: Pan 60s ease-out 0s infinite;
+  .zoom {
+    animation: Zoom 90s ease-out 0s infinite;
+  }
+
+  .zoomed {
+    transform: scale(1.3);
+  }
+
+  .pan-left {
+    animation: PanLeft 90s ease-out 0s infinite;
+    width: 120%;
+    height: 120%;
+    left: 0;
+  }
+
+  .pan-right {
+    animation: PanRight 90s ease-out 0s infinite;
+    width: 120%;
+    height: 120%;
+    right: 0;
   }
 
   .overlay {
@@ -797,11 +941,73 @@ export default {
     z-index: 99;
     top: 0;
     left: 0;
+    right: 0;
+    bottom: 0;
     width: 100%;
     height: 100%;
 
+    text-shadow: rgb(0, 0, 0) 2px 2px 4px;
+
     opacity: 1;
     transition: opacity 0.2s;
+
+    .overlay-loading {
+      .status {
+        position: absolute;
+        display: flex;
+        flex-flow: column;
+        bottom: 2%;
+        width: 100%;
+        text-align: center;
+        font-size: 16px;
+        font-weight: 400;
+
+        * { margin: 0.2em; }
+        .dlspeed {
+          font-size: 13px;
+          color: dimgray;
+          font-weight: 500;
+        }
+      }
+    }
+
+    .overlay-watching {
+      position: absolute;
+      width: 98%;
+      height: 98%;
+      margin: 1%;
+
+      .control-back {
+      }
+
+      .control-trackbar {
+        position: absolute;
+        width: 100%;
+        bottom: 0;
+
+        display: flex;
+        flex-flow: column;
+
+        .trackbar {
+          width: 100%;
+        }
+
+        .trackbar-controls {
+          display: flex;
+          justify-content: space-between;
+
+          .primary-controls {
+            display: flex;
+            flex-flow: row;
+          }
+
+          .secondary-controls {
+            display: flex;
+            flex-flow: row;
+          }
+        }
+      }
+    }
   }
 }
 </style>
