@@ -251,7 +251,8 @@ export default {
           this.$props,
           this.details,
           this.fanart,
-          this.backdrop,
+          this.backdrop || "https://image.tmdb.org/w/500" + (this.getOrientation == "16x9" ? this.$props.info.backdrop_path : this.$props.info.poster_path),
+          this.seasons,
         ]);
       }
     },
@@ -312,13 +313,15 @@ export default {
     },
     fetchSeasonEpisodes() {
       if (this.media_type == MEDIA.Show) {
-        this.details.seasons.forEach((s) => {
-          getEpisodes(this.tmdb_id, s.season_number, null, {
-            cancelToken: this.cancelTokens.episodes.token,
-          }).then((r) => {
-            this.seasons[s.season_number] = r.data;
+        if (this.details.seasons) {
+          this.details.seasons.forEach((s) => {
+            getEpisodes(this.tmdb_id, s.season_number, null, {
+              cancelToken: this.cancelTokens.episodes.token,
+            }).then((r) => {
+              this.seasons[s.season_number] = r.data;
+            });
           });
-        });
+        }
       }
     },
     loadFanArt() {
@@ -373,60 +376,53 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.opaque {
-  opacity: 1;
-}
-
-.translucent {
-  opacity: 0;
-}
-
 a {
-  text-decoration: none;
-  color: whitesmoke;
-  cursor: pointer;
+    text-decoration: none;
+    color: whitesmoke;
+    cursor: pointer;
+}
 
-  .faded {
+.faded {
     display: none;
-  }
+}
 
-  .boxart {
+.boxart {
     position: relative;
     width: 100%;
     height: 0;
     overflow: hidden;
-  }
+}
 
-  .boxart-size-7x10 {
+.boxart-size-7x10 {
     padding: 70% 0; // 7x10 aspect ratio padding hack
-  }
+}
 
-  .boxart-size-16x9 {
+.boxart-size-16x9 {
     padding: 28.125% 0; // 16x9 aspect ratio padding hack
-  }
+}
 
-  .boxart-rounded {
+.boxart-rounded {
     border-radius: 4px;
-  }
+}
 
-  .boxart-image-in-padded-container {
+.boxart-image-in-padded-container {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
     width: 100%;
-  }
+}
 
-  img.boxart-image {
+img.boxart-image {
     object-fit: cover;
     border: 0;
     height: 100%;
     width: 100%;
     z-index: 1;
-  }
+}
 
-  .overlay-container {
+.overlay-container {
     position: absolute;
     top: 0;
     left: 0;
@@ -435,36 +431,36 @@ a {
     width: 100%;
     height: 100%;
     z-index: 2;
-  }
+}
 
-  .progress-container {
+.progress-container {
     position: relative;
     transition: opacity 350ms;
     text-align: center;
 
     .progress-bar {
-      progress {
-        appearance: none;
-        border: none;
-        height: 3px;
-        width: 85%;
-      }
+        progress {
+            appearance: none;
+            border: none;
+            height: 3px;
+            width: 85%;
+        }
 
-      progress[value] {
-        appearance: none;
-      }
+        progress[value] {
+            appearance: none;
+        }
 
-      progress::-webkit-progress-bar {
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5) inset;
-      }
+        progress::-webkit-progress-bar {
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5) inset;
+        }
 
-      progress[value]::-webkit-progress-value {
-        background: red;
-      }
+        progress[value]::-webkit-progress-value {
+            background: red;
+        }
     }
-  }
+}
 
-  .fallback-text-container {
+.fallback-text-container {
     background-size: cover;
     background-color: #454545;
     position: absolute;
@@ -476,37 +472,38 @@ a {
     z-index: -1;
 
     .fallback-text {
-      box-sizing: border-box;
-      position: absolute;
-      width: 90%;
-      padding: 0 0 10%;
-      bottom: 0;
-      left: 5;
-      right: 5%;
-      text-shadow: rgb(0, 0, 0) 0 0 4px;
-      text-align: center;
-      text-overflow: ellipsis;
-      font-weight: 700;
-      font-size: 1.2em;
-      overflow: hidden;
-      z-index: 2;
+        box-sizing: border-box;
+        position: absolute;
+        width: 90%;
+        padding: 0 0 10%;
+        bottom: 0;
+        left: 5;
+        right: 5%;
+        text-shadow: rgb(0, 0, 0) 0 0 4px;
+        text-align: center;
+        text-overflow: ellipsis;
+        font-weight: 700;
+        font-size: 1.2em;
+        overflow: hidden;
+        z-index: 2;
     }
-  }
+}
 
-  @keyframes Pulse {
+@keyframes Pulse {
     0% {
-      background-color: #303030;
+        background-color: #303030;
     }
-    50% {
-      background-color: #454545;
-    }
-    100% {
-      background-color: #303030;
-    }
-  }
 
-  .pulse {
+    50% {
+        background-color: #454545;
+    }
+
+    100% {
+        background-color: #303030;
+    }
+}
+
+.pulse {
     animation: Pulse 3s ease-in-out 0s infinite;
-  }
 }
 </style>

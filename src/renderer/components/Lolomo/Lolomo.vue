@@ -9,16 +9,19 @@
       @card-popover="onCardPopover($event)"
     />
   </div>
+
+  <CardPop v-show="popconfig[0]" :config="popconfig" @unpop="onCardPopoverUnpop($event)" />
 </template>
 
 <script>
 import Billboard from "./Billboard";
 import Lom from "./Lom";
+import CardPop from "../CardPopover";
 import "./Lolomo.scss";
 import { CancelToken, axios } from "../../api/axios";
 
 export default {
-  components: { Billboard, Lom },
+  components: { Billboard, Lom, CardPop },
   name: "Lolomo",
   props: {
     section: {
@@ -34,7 +37,7 @@ export default {
   },
   data() {
     return {
-      popover: [false],
+      popconfig: [false],
       config: null,
       loadedloms: [],
       isatbottom: false,
@@ -42,10 +45,10 @@ export default {
   },
   methods: {
     onCardPopover(e) {
-      this.popover = e;
+      this.popconfig = e;
     },
-    onCardPopoverUnpop() {
-      this.popover = [false];
+    onCardPopoverUnpop(e) {
+      this.popconfig = [false];
     },
     setConfig() {
       this.config = this.getSectionExports(this.getSection);
