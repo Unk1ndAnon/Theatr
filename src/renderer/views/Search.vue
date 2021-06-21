@@ -3,13 +3,27 @@
     <Header />
     <div class="browse-container" v-if="searchresults.length > 0">
       <div class="search-wrapper">
-        <row container v-for="row in range(1, (searchresults.length / breakpoints[breakpoint].columns))"
+        <row
+          container
+          v-for="row in range(
+            1,
+            searchresults.length / breakpoints[breakpoint].columns
+          )"
           :key="row"
-          :gutter="breakpoints[breakpoint].gutter">
-          <column v-for="col in range(1, breakpoints[breakpoint].columns)" :key="col">
-            <Card v-if="getCard(row, col) && ['movie', 'tv'].indexOf(getCard(row, col).media_type) > -1"
+          :gutter="breakpoints[breakpoint].gutter"
+        >
+          <column
+            v-for="col in range(1, breakpoints[breakpoint].columns)"
+            :key="col"
+          >
+            <Card
+              v-if="
+                getCard(row, col) &&
+                ['movie', 'tv'].indexOf(getCard(row, col).media_type) > -1
+              "
               :info="getCard(row, col)"
-              :config="{ popover: true, cardOrientation: '7x10' }" />
+              :config="{ popover: true, cardOrientation: orientation }"
+            />
           </column>
         </row>
       </div>
@@ -29,12 +43,18 @@ export default {
   name: "Home",
   components: { Header, Row, Column, Card },
   watch: {
-    "$route.params"(to, from) {
+    "$route.params"() {
+      this.requestActive = false;
+      this.searchresults = [];
+
       this.populate();
     },
   },
   computed: {
-    cancellation: () => {
+    isposter: () => {
+      return this.orientation == "7x10";
+    },
+    searchtoken: () => {
       return CancelToken.source();
     },
   },
@@ -47,7 +67,11 @@ export default {
     getCard(row, col) {
       const breakpoints = this.breakpoints;
       const breakpoint = this.breakpoint;
-      return this.searchresults[((row * breakpoints[breakpoint].columns) - Math.abs(col - breakpoints[breakpoint].columns) - 1)];
+      return this.searchresults[
+        row * breakpoints[breakpoint].columns -
+          Math.abs(col - breakpoints[breakpoint].columns) -
+          1
+      ];
     },
     calculateBreakpoint() {
       const width = window.innerWidth;
@@ -73,65 +97,86 @@ export default {
     term() {
       return this.$route.params.searchTerm;
     },
-    populate() {
-      this.searchresults = [];
-
-      search(this.term(), "multi", {
-        cancelToken: this.cancellation.token,
-      }).then((r) => {
-        this.searchresults = r.data.results;
-      }).catch((e) => {
-        if (e.response) {
-          if (e.response.status == 422)
-            this.searchresults = [];
-        }
-        console.log(e);
+    searchRequest(page = 1) {
+      return search(this.term(), "multi", {
+        cancelToken: this.searchtoken.token,
+        params: { page: page, sort_by: "popularity.desc" },
       });
+    },
+    populate(page = 1) {
+      if (!this.requestActive && page < 3) {
+        this.requestActive = true;
+
+        this.searchRequest(page)
+          .then((r) => {
+            this.requestActive = false;
+            let results = r.data.results;
+
+            results.filter(
+              (result) => result.backdrop_path || result.poster_path
+            );
+
+            if (page > 1) {
+              this.searchresults = [...this.searchresults, ...results];
+              this.currentPage = this.currentPage + 1;
+            } else {
+              this.searchresults = results;
+            }
+
+            this.populate(page + 1);
+          })
+          .catch((e) => {
+            if (e.response) {
+              if (e.response.status == 422) this.searchresults = [];
+            }
+            console.log(e);
+            this.requestActive = false;
+          });
+      }
     },
   },
   data() {
     return {
       breakpoints: {
         320: {
-          columns: 2,
+          columns: this.isposter ? 4 : 3,
           gutter: 8,
         },
         480: {
-          columns: 3,
+          columns: this.isposter ? 5 : 4,
           gutter: 8,
         },
         640: {
-          columns: 4,
+          columns: this.isposter ? 6 : 5,
           gutter: 8,
         },
         1280: {
-          columns: 5,
+          columns: this.isposter ? 7 : 6,
           gutter: 8,
         },
         1440: {
-          columns: 6,
+          columns: this.isposter ? 8 : 7,
           gutter: 8,
         },
         1920: {
-          columns: 7,
+          columns: this.isposter ? 9 : 8,
           gutter: 8,
         },
       },
       breakpoint: false,
-      orientation: "7x10",
+      orientation: "16x9",
       searchresults: [],
+      currentPage: 1,
+      requestActive: false,
     };
   },
   created() {
     window.addEventListener("resize", () => this.calculateBreakpoint());
     this.calculateBreakpoint();
-  },
-  mounted() {
     this.populate();
   },
   beforeUnmount() {
     window.removeEventListener("resize", () => this.calculateBreakpoint());
-    this.cancellation.cancel("Operation canceled by lifecycle hook.");
   },
 };
 </script>
