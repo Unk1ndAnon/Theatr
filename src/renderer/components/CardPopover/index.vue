@@ -4,7 +4,7 @@
       <div class="boxart boxart-rounded boxart-size-16x9">
         <img
           class="boxart-image boxart-image-in-padded-container"
-          v-if="backdropPath"
+          v-if="backdrop"
           :src="backdrop"
           @click="onBoxartClick"
         />
@@ -44,11 +44,7 @@ export default {
     },
   },
   emits: ["unpop"],
-  data() {
-    return {
-      backdrop: this.$props.config[5],
-    };
-  },
+  data() {},
   computed: {
     dimensions() {
       return this.$props.config[1];
@@ -61,6 +57,9 @@ export default {
     },
     fanart() {
       return this.$props.config[4];
+    },
+    backdrop() {
+      return this.$props.config[5];
     },
     card_config() {
       return this.$props.config;
@@ -104,17 +103,6 @@ export default {
       } else {
         return linearGradient;
       }
-    },
-    backdropPath: {
-      get() {
-        return this.backdrop;
-      },
-      set(path) {
-        // If path begins with "/" (from tmdb api response), then prepend TMDB images repo URL.
-        this.backdrop = path.startsWith("/")
-          ? `https://image.tmdb.org/t/p/w500${path}`
-          : path;
-      },
     },
     getEncodedInfo() {
       // URL-encoded Base64 array of strings, with forward slashes (/)
@@ -207,42 +195,7 @@ export default {
     },
   },
   updated() {
-    if (this.details) {
-      if (this.details.images) {
-        const backdrops = (
-          this.getOrientation == "16x9"
-            ? this.details.images.backdrops
-            : this.details.images.posters
-        ).sort((a, b) => b.vote_count - a.vote_count);
-
-        if (backdrops) {
-          const backdropsInLang = backdrops.filter((i) => {
-            return i.iso_639_1 == this.application_language;
-          });
-
-          if (backdropsInLang.length > 0) {
-            this.backdropPath = backdropsInLang[0].file_path;
-          }
-        }
-      }
-    }
-
-    if (this.fanart) {
-      const backgrounds =
-        (this.getOrientation == "16x9"
-          ? this.fanart.moviebackgrounds || this.fanart.showbackgrounds
-          : this.fanart.movieposter || this.fanart.tvposter) || null;
-
-      if (backgrounds) {
-        const backgroundsInLang = backgrounds.filter(
-          (i) => i.lang == this.application_language
-        );
-
-        if (backgroundsInLang.length > 0) {
-          this.backdropPath = backgroundsInLang[0].url;
-        }
-      }
-    }
+  
 
     if (this.$refs && this.dimensions) {
       const popDims = this.adjustedPopDimensions();

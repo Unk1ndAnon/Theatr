@@ -251,7 +251,7 @@ export default {
           this.$props,
           this.details,
           this.fanart,
-          this.backdrop || "https://image.tmdb.org/w/500" + (this.getOrientation == "16x9" ? this.$props.info.backdrop_path : this.$props.info.poster_path),
+          this.backdrop,
           this.seasons,
         ]);
       }

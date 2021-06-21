@@ -3,7 +3,8 @@ div.popover {
     z-index: 999;
 
     transform: scale(0.5);
-    transition: transform .2s;
+    opacity: 0;
+    transition: transform .2s, opacity .2s;
 
     background: transparent;
 
@@ -74,4 +75,5 @@ div.popover {
 
 div.popped {
     transform: scale(1);
+    opacity: 1;
 }
