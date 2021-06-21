@@ -1,5 +1,5 @@
 import { axios, cache } from "./axios";
-//const { JSDOM } = require("jsdom");
+// const { JSDOM } = require("jsdom");
 
 const _api = axios.create({
   adapter: cache.adapter,
@@ -11,7 +11,7 @@ const _api = axios.create({
 });
 
 export function scrapeIDs(query, sect) {
-  /*return axios.get(`https://fanart.tv/`, {
+  return axios.get(`https://fanart.tv/`, {
     adapter: cache.adapter,
     timeout: 5000,
     params: {
@@ -19,7 +19,7 @@ export function scrapeIDs(query, sect) {
       sect: sect,
     },
     transformResponse: (r) => {
-      const dom = new JSDOM(r);
+      /*const dom = new JSDOM(r);
       const search_results =
         dom.window.document.querySelector("div.search_results");
       const section = search_results
@@ -42,10 +42,10 @@ export function scrapeIDs(query, sect) {
         });
       }
 
-      return JSON.stringify(list);
+      return JSON.stringify(list);*/
+      return {};
     },
-  });*/
-  return null;
+  });
 }
 
 export function getFanArt(imdb_id, media_type = "movies", options = {}) {

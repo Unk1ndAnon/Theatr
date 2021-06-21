@@ -11,7 +11,7 @@
       <div class="col">
         <h3 class="col-header">Links</h3>
         <ul class="linklist">
-          <li>Link 1{{a}}</li>
+          <li>Link 1</li>
         </ul>
       </div>
 
