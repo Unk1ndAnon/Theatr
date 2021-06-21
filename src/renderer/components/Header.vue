@@ -66,7 +66,7 @@ export default {
       () => (this.pageYOffset = window.pageYOffset)
     );
   },
-  unmounted() {
+  beforeUnmount() {
     window.removeEventListener(
       "scroll",
       () => (this.pageYOffset = window.pageYOffset)
