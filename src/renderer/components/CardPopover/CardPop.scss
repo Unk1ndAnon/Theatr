@@ -57,6 +57,23 @@ div.popover {
         bottom: 0;
         width: 100%;
         z-index: -1;
+
+        .fallback-text {
+            box-sizing: border-box;
+            position: absolute;
+            width: 90%;
+            padding: 0 0 10%;
+            bottom: 0;
+            left: 5;
+            right: 5%;
+            text-shadow: rgb(0, 0, 0) 0 0 4px;
+            text-align: center;
+            text-overflow: ellipsis;
+            font-weight: 700;
+            font-size: 1.2em;
+            overflow: hidden;
+            z-index: 2;
+        }
     }
 
     .meta-container {

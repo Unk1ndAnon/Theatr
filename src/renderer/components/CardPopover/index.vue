@@ -12,7 +12,9 @@
         <div
           class="fallback-boxart"
           :style="{ 'background-image': fallbackBackdropStyle }"
-        ></div>
+        >
+            <p class="fallback-text">{{ media_title }}</p>
+        </div>
       </div>
     </a>
     <div v-if="details" ref="elMetacontainer" class="meta-container">
@@ -74,8 +76,8 @@ export default {
       return this.$store.state.ISO639;
     },
     media_title() {
-      if (this.details.title) return this.details.title;
-      if (this.details.name) return this.details.name;
+      if (this.details)
+        return this.details.title || this.details.name;
       return null;
     },
     media_type() {
@@ -195,8 +197,6 @@ export default {
     },
   },
   updated() {
-  
-
     if (this.$refs && this.dimensions) {
       const popDims = this.adjustedPopDimensions();
       //this.$refs.elPopover.style.top = `${this.dimensions.top - (this.dimensions.height / 2)}px`;
