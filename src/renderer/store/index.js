@@ -5,6 +5,7 @@ import Trakt from "../api/trakt";
 export default createStore({
   state: {
     ISO639: "en",
+    ISO3166: "US",
     trakt: {
       authCode: null,
     },
