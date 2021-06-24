@@ -17,6 +17,10 @@ div.popover-wrapper {
         opacity: 0 !important;
     }
 
+    .faded {
+        opacity: 0.075 !important;
+    }
+
     .preview-modal--container {
         transform: scaleX(0.5) scaleY(0.5) translateX(0px) translateY(0px) translateZ(0px);
         transform-origin: center;
@@ -70,11 +74,19 @@ div.popover-wrapper {
                         transition: opacity 1s;
 
                         .overlay-title {
-                            opacity: 0.2;
+                            opacity: 0.75;
+                            transition: opacity 1s;
+
                             padding: 0; margin: 0;
+                            text-overflow: ellipsis;
 
                             color: #fff;
                             text-shadow: rgb(0, 0, 0) 0 0 4px;
+                        }
+
+                        .overlay-title:hover {
+                            opacity: 0.75 !important;
+                            transition: opacity 0.3s;
                         }
                     }
 
@@ -195,6 +207,7 @@ div.popover-wrapper {
                                 border-radius: 50%;
                                 border: 0px 0px 0px 0px;
                                 cursor: pointer;
+                                margin-left: .25em;
                             }
 
                             .ltr {
@@ -207,6 +220,10 @@ div.popover-wrapper {
                                 justify-content: center;
                                 height: 1.8rem;
                                 width: 1.8rem;
+                            }
+
+                            .expand-button {
+                                margin-left: auto;
                             }
                         }
 

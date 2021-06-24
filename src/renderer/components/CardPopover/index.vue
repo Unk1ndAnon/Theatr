@@ -17,7 +17,9 @@
 
           <div ref="elVideowrapper" class="video--wrapper hide">
             <div ref="elVideooverlay" class="video--wrapper--overlay hide">
-              <h3 class="overlay-title">{{ media_title }}</h3>
+              <h3 ref="elVideooverlayTitle" class="overlay-title">
+                {{ media_title }}
+              </h3>
             </div>
             <video ref="videoplayer" id="videoPlayer" class="video-js" />
           </div>
@@ -62,7 +64,10 @@
                   </div>
                 </button>
 
-                <button class="color-primary hasIcon fill" type="button">
+                <button
+                  class="color-primary hasIcon fill expand-button"
+                  type="button"
+                >
                   <div class="ltr">
                     <div class="small">
                       <font-awesome-icon class="icon" :icon="icon.expand" />
@@ -73,17 +78,17 @@
 
               <div class="preview-modal--metadataAndControls-info">
                 <div class="videoMetadata--container">
-                  <div class="videoMetadata--first-line">
+                  <!-- <div class="videoMetadata--first-line">
                     <span class="score">{{
                       Math.floor(details.popularity)
                     }}</span>
-                  </div>
+                  </div> -->
 
                   <div class="videoMetadata--second-line">
                     <span class="duration">{{ runtime }}</span>
                     <span class="maturity-rating">
                       <span class="maturity-number">{{
-                        certification || "Not Rated"
+                        certification || "NR"
                       }}</span>
                     </span>
                     <span class="year">{{
@@ -111,7 +116,9 @@
                       v-for="genre in details.genres"
                       :key="genre.id"
                     >
-                      <a class="evidence-text" :href="`/${genre.id}`">{{ genre.name }}</a>
+                      <a class="evidence-text" :href="`/${genre.id}`">{{
+                        genre.name
+                      }}</a>
                     </li>
                   </ul>
                 </div>
@@ -238,6 +245,11 @@ export default {
       if (this.details) return this.details.title || this.details.name;
       return null;
     },
+    original_title() {
+      if (this.details)
+        return this.details.original_title || this.details.original_name;
+      return null;
+    },
     media_type() {
       return this.details.title ? "tv" : "movie";
     },
@@ -322,14 +334,17 @@ export default {
         setTimeout(() => {
           this.$refs.elVideowrapper.classList.remove("hide");
 
-          setTimeout(
-            () => this.$refs.elVideooverlay.classList.remove("hide"),
-            6000
-          );
+          setTimeout(() => {
+            this.$refs.elVideooverlay.classList.remove("hide");
+            setTimeout(() => {
+              this.$refs.elVideooverlayTitle.classList.add("faded");
+            }, 4000);
+          }, 6000);
         }, 500);
       } else {
         this.$refs.elVideowrapper.classList.add("hide");
         this.$refs.elVideooverlay.classList.add("hide");
+        this.$refs.elVideooverlayTitle.classList.remove("faded");
 
         setTimeout(() => {
           if (this.$refs.elBoxart) this.$refs.elBoxart.classList.remove("hide");
