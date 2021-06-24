@@ -34,15 +34,14 @@ ipcMain.on("yt-get-video-info", (e, ...args) => {
   const key = args[0];
   console.log("Scraping", key);
 
-  /*get_video_info(key)
+  get_video_info(key)
     .then((r) => {
       e.reply(`yt-get-video-info-${key}`, r.data);
     })
     .catch((e) => {
       console.log("Error scraping Youtube");
       console.error(e);
-    });*/
-    
+    });
 });
 
 ipcMain.on("onVideoPlay", (e, ...args) => {

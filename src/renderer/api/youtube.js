@@ -18,8 +18,11 @@ export function get_video_info(id) {
     params: {
       video_id: id,
       el: "embedded",
-      ps: "default",
-      eurl: "",
+      html5: "1",
+      eurl: `https://youtube.googleapis.com/v/${id}`,
+      sts: "",
+      c: "TVHTML5",
+      cver: "6.20180913",
     },
     transformResponse: (r) => {
       return rockCrusher(r);
