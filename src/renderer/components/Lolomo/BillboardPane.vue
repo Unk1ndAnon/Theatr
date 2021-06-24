@@ -51,7 +51,7 @@
       <div class="image-vignette"></div>
       <img
         class="image-layer static-img"
-        :src="'https://images.tmdb.org/t/p/w1280' + info.backdrop_path"
+        :src="'https://images.tmdb.org/t/p/original' + info.backdrop_path"
         :alt="info.title"
       />
     </div>
@@ -278,10 +278,10 @@ export default {
 
         const key = selectedSites[0].key;
 
-        ipcRenderer.send("yt-get-video-info", key);
         ipcRenderer.once(`yt-get-video-info-${key}`, (e, ...args) => {
-          this.youtube = args[0].streamingData;
+          //this.youtube = args[0].streamingData;
         });
+        //ipcRenderer.send("yt-get-video-info", key);
       }
     },
   },
