@@ -23,10 +23,13 @@
               "
               :info="getCard(row, col)"
               :config="{ popover: true, cardOrientation: orientation }"
+              @card-popover="onCardPopover($event)"
             />
           </column>
         </row>
       </div>
+
+      <CardPop v-if="popconfig[0]" :config="popconfig" @unpop="onCardPopoverUnpop($event)" />
     </div>
   </div>
 </template>
@@ -35,13 +38,14 @@
 import { Row, Column } from "vue-grid-responsive";
 import Header from "../components/Header";
 import Card from "../components/Lolomo/Card";
+import CardPop from "../components/CardPopover";
 
 import { CancelToken } from "../api/axios";
 import { search } from "../api/tmdb";
 
 export default {
   name: "Home",
-  components: { Header, Row, Column, Card },
+  components: { Header, Row, Column, Card, CardPop },
   watch: {
     "$route.params"() {
       this.requestActive = false;
@@ -59,6 +63,12 @@ export default {
     },
   },
   methods: {
+    onCardPopover(e) {
+      this.popconfig = e;
+    },
+    onCardPopoverUnpop(e) {
+      this.popconfig = [false];
+    },
     range(start, end) {
       if (start > end) return [start];
       if (start === end) return [start];
@@ -163,6 +173,7 @@ export default {
           gutter: 8,
         },
       },
+      popconfig: [false],
       breakpoint: false,
       orientation: "16x9",
       searchresults: [],

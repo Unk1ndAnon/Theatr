@@ -10,7 +10,7 @@
     />
   </div>
 
-  <CardPop v-show="popconfig[0]" :config="popconfig" @unpop="onCardPopoverUnpop($event)" />
+  <CardPop v-if="popconfig[0]" :config="popconfig" @unpop="onCardPopoverUnpop($event)" />
 </template>
 
 <script>
