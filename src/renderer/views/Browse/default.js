@@ -26,8 +26,8 @@ const swiperDefaults = {
       slidesPerGroup: 3,
     },
     640: {
-      slidesPerView: 4,
-      slidesPerGroup: 4,
+      slidesPerView: 5,
+      slidesPerGroup: 5,
     },
     1280: {
       slidesPerView: 5,
@@ -59,7 +59,7 @@ const sectionConfig = {
 
   loms: [
     {
-      listName: "Recommendations",
+      listName: "Suggestions For You",
       request: [
         {
           connector: "trakt",
@@ -106,12 +106,19 @@ const sectionConfig = {
       swiperOptions: swiperDefaults,
     },
     {
-      listName: "Movies to Consider",
+      listName: "Marvel Movies",
       request: [
         {
           connector: "tmdb",
           function: "discover",
-          args: [MEDIA.Movie],
+          args: [
+            MEDIA.Movie,
+            {
+              params: {
+                with_companies: 429,
+              },
+            },
+          ],
         },
       ],
       swiperOptions: swiperDefaults,
