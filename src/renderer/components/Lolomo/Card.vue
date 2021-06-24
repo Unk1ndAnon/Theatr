@@ -253,6 +253,7 @@ export default {
           this.fanart,
           this.backdrop,
           this.seasons,
+          this.progress,
         ]);
       }
     },
@@ -276,7 +277,13 @@ export default {
       }
 
       getDetails(this.tmdb_id, this.media_type, {
-        params: { append_to_response: "images,videos" },
+        params: {
+          append_to_response:
+            "images,videos" +
+            (this.media_type == "movie"
+              ? ",release_dates"
+              : ",content_ratings"),
+        },
         cancelToken: this.cancelTokens.details.token,
       })
         .then((r) => {
@@ -377,133 +384,133 @@ export default {
 
 <style lang="scss" scoped>
 a {
-    text-decoration: none;
-    color: whitesmoke;
-    cursor: pointer;
+  text-decoration: none;
+  color: whitesmoke;
+  cursor: pointer;
 }
 
 .faded {
-    display: none;
+  display: none;
 }
 
 .boxart {
-    position: relative;
-    width: 100%;
-    height: 0;
-    overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: 0;
+  overflow: hidden;
 }
 
 .boxart-size-7x10 {
-    padding: 70% 0; // 7x10 aspect ratio padding hack
+  padding: 70% 0; // 7x10 aspect ratio padding hack
 }
 
 .boxart-size-16x9 {
-    padding: 28.125% 0; // 16x9 aspect ratio padding hack
+  padding: 28.125% 0; // 16x9 aspect ratio padding hack
 }
 
 .boxart-rounded {
-    border-radius: 4px;
+  border-radius: 4px;
 }
 
 .boxart-image-in-padded-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
 }
 
 img.boxart-image {
-    object-fit: cover;
-    border: 0;
-    height: 100%;
-    width: 100%;
-    z-index: 1;
+  object-fit: cover;
+  border: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 1;
 }
 
 .overlay-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 2;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
 }
 
 .progress-container {
-    position: relative;
-    transition: opacity 350ms;
-    text-align: center;
+  position: relative;
+  transition: opacity 350ms;
+  text-align: center;
 
-    .progress-bar {
-        progress {
-            appearance: none;
-            border: none;
-            height: 3px;
-            width: 85%;
-        }
-
-        progress[value] {
-            appearance: none;
-        }
-
-        progress::-webkit-progress-bar {
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5) inset;
-        }
-
-        progress[value]::-webkit-progress-value {
-            background: red;
-        }
+  .progress-bar {
+    progress {
+      appearance: none;
+      border: none;
+      height: 3px;
+      width: 85%;
     }
+
+    progress[value] {
+      appearance: none;
+    }
+
+    progress::-webkit-progress-bar {
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5) inset;
+    }
+
+    progress[value]::-webkit-progress-value {
+      background: red;
+    }
+  }
 }
 
 .fallback-text-container {
-    background-size: cover;
-    background-color: #454545;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    z-index: -1;
+  background-size: cover;
+  background-color: #454545;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  z-index: -1;
 
-    .fallback-text {
-        box-sizing: border-box;
-        position: absolute;
-        width: 90%;
-        padding: 0 0 10%;
-        bottom: 0;
-        left: 5;
-        right: 5%;
-        text-shadow: rgb(0, 0, 0) 0 0 4px;
-        text-align: center;
-        text-overflow: ellipsis;
-        font-weight: 700;
-        font-size: 1.2em;
-        overflow: hidden;
-        z-index: 2;
-    }
+  .fallback-text {
+    box-sizing: border-box;
+    position: absolute;
+    width: 90%;
+    padding: 0 0 10%;
+    bottom: 0;
+    left: 5;
+    right: 5%;
+    text-shadow: rgb(0, 0, 0) 0 0 4px;
+    text-align: center;
+    text-overflow: ellipsis;
+    font-weight: 700;
+    font-size: 1.2em;
+    overflow: hidden;
+    z-index: 2;
+  }
 }
 
 @keyframes Pulse {
-    0% {
-        background-color: #303030;
-    }
+  0% {
+    background-color: #303030;
+  }
 
-    50% {
-        background-color: #454545;
-    }
+  50% {
+    background-color: #454545;
+  }
 
-    100% {
-        background-color: #303030;
-    }
+  100% {
+    background-color: #303030;
+  }
 }
 
 .pulse {
-    animation: Pulse 3s ease-in-out 0s infinite;
+  animation: Pulse 3s ease-in-out 0s infinite;
 }
 </style>
