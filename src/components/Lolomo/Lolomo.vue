@@ -1,16 +1,18 @@
 <template>
-  <Billboard v-if="config.billboard" v-bind="config.billboard" />
+  <div class="lolomo-container">
+    <Billboard v-if="config.billboard" v-bind="config.billboard" />
 
-  <div :class="`lom-rowcontainer ${config.billboard ? 'with-billboard' : ''}`">
-    <Lom
-      v-for="lom in loadedloms"
-      :key="lom.listName"
-      v-bind="lom"
-      @card-popover="onCardPopover($event)"
-    />
+    <div ref="rowcontainer" :class="`lom-rowcontainer ${config.billboard ? 'with-billboard' : ''}`">
+      <Lom
+        v-for="lom in loadedloms"
+        :key="lom.listName"
+        v-bind="lom"
+        @card-popover="onCardPopover($event)"
+      />
+    </div>
+
+    <CardPop v-if="popconfig[0]" :config="popconfig" @unpop="onCardPopoverUnpop($event)" @modal-close="onCloseModal($event)" />
   </div>
-
-  <CardPop v-if="popconfig[0]" :config="popconfig" @unpop="onCardPopoverUnpop($event)" />
 </template>
 
 <script>
@@ -49,6 +51,10 @@ export default {
     },
     onCardPopoverUnpop(e) {
       this.popconfig = [false];
+      this.$refs.rowcontainer.style.overflow = "visible";
+    },
+    onCloseModal(e) {
+      this.$refs.rowcontainer.style.overflow = "hidden";
     },
     setConfig() {
       this.config = this.getSectionExports(this.getSection);

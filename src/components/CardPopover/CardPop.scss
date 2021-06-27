@@ -1,16 +1,43 @@
-div.popover-wrapper {
+div.popover-wrapper.expanded {
     position: absolute;
-    z-index: 9;
-    display: flex;
-    left: 0; top: 0;
-    justify-content: center;
+    z-index: 7;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+
+    overflow-y: visible;
+
+    .overlay {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        top: 0; bottom: 0;
+        background-color: black;
+
+        opacity: 0.7 !important;
+        transition: all .3s;
+    }
+
+    .preview-modal--container.detail-modal {
+        margin: 0 auto;
+        left: 20% !important;
+        width: 60% !important;
+    }
+
+}
+
+div.popover-wrapper {
+    width: fit-content;
+    height: fit-content;
     box-sizing: border-box;
 
     will-change: scroll-position;
 
-    .popped {
-        opacity: 1 !important;
-        transform: scale(1) !important;
+    .overlay {
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        transition: all .2s;
     }
 
     .hide {
@@ -21,22 +48,34 @@ div.popover-wrapper {
         opacity: 0.075 !important;
     }
 
+    .preview-modal--container.popped {
+        opacity: 1 !important;
+        transform: scale(1) !important;
+
+        .preview-modal--infowrapper {
+            opacity: 1;
+            transform: translateY(-1px);
+        }
+    }
+
     .preview-modal--container {
-        transform: scaleX(0.5) scaleY(0.5) translateX(0px) translateY(0px) translateZ(0px);
+        position: absolute;
+        will-change: transform;
+
+        top: 0; left: 0;
+        z-index: 8;
+
+        transform: scaleX(0.5) scaleY(0.5) translateX(0) translateY(0) translateZ(0);
         transform-origin: center;
-        transition: all .2s;
-        opacity: 0;
+        transition: all .3s;
 
-        box-shadow: rgba(0, 0, 0, 0.75) 0px 3px 10px;
-
-        background: #222;
         font-size: 14px;
-        border-radius: 4px;
 
         .preview-modal--player_container {
             cursor: pointer;
             border-radius: 4px 4px 0 0;
             background-color: #000;
+            box-shadow: rgba(0, 0, 0, 0.75) 0px 3px 10px;
             
             .preview-modal--boxart-wrapper {
                 width: 100%;
@@ -45,17 +84,16 @@ div.popover-wrapper {
 
                 .preview-modal-boxart {
                     position: absolute;
+                    z-index: 9;
                     width: 100%;
                     top: 0; left: 0;
                     background-size: cover;
                     border-radius: 4px 4px 0 0;
-
-                    opacity: 1;
-                    transition: opacity .2s;
                 }
 
                 .video--wrapper {
                     position: absolute;
+                    z-index: 9;
                     top: 0; left: 0; right: 0;
                     width: 100%;
 
@@ -63,7 +101,7 @@ div.popover-wrapper {
                     transition: opacity .2s;
 
                     .video--wrapper--overlay {
-                        z-index: 9;
+                        z-index: 10;
                         position: absolute;
                         top: 0; left: 0;
                         width: 100%;
@@ -166,7 +204,13 @@ div.popover-wrapper {
         }
 
         .preview-modal--infowrapper {
-            transform: none;
+            box-shadow: rgba(0, 0, 0, 0.75) 0px 3px 10px;
+            background: #222;
+
+            transform: translateY(-100px);
+            transition: all .3s;
+            opacity: 0;
+            border-radius: 0 0 4px 4px;
 
             .preview-modal--modal-container {
                 padding: 1em;

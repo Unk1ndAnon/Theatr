@@ -6,7 +6,7 @@
     @mouseleave="onMouseLeave"
   >
     <div ref="elModal" class="preview-modal--container">
-      <div class="preview-modal--player_container">
+      <div class="preview-modal--player_container" @click="onBoxartClick">
         <div class="preview-modal--boxart-wrapper">
           <img
             ref="elBoxart"
@@ -67,6 +67,7 @@
                 <button
                   class="color-primary hasIcon fill expand-button"
                   type="button"
+                  @click="expandModal"
                 >
                   <div class="ltr">
                     <div class="small">
@@ -123,11 +124,45 @@
                   </ul>
                 </div>
               </div>
+
+              <div v-if="expanded" class="preview-modal--episodeSelector">
+                <div class="episodeSelector-header">
+                  <span class="episodeSelector-header-text">Episodes</span>
+                  <div class="episodeSelector-dropdown">
+                    <select
+                      ref="episodeSelector"
+                      class="episodeSelector"
+                      v-model="selectedSeason"
+                    >
+                      <option
+                        v-for="s in seasons"
+                        :key="s.id"
+                        :value="`${s.id}`"
+                      >
+                        {{ s.name }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="episodeSelector-container" v-if="selectedSeason">
+                    {{ selectedSeason }}
+                    <div
+                      class="episodeCard"
+                      v-for="e in episodes(selectedSeason)"
+                      :key="e.id"
+                    >
+                      {{ e.name }}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <div class="overlay" @click="onClickOutside"></div>
   </div>
 </template>
 
@@ -142,7 +177,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 import videojs from "video.js";
-import { ipcRenderer } from "electron";
 
 /**
 this.$emit("card-popover", [
@@ -166,9 +200,10 @@ export default {
       required: true,
     },
   },
-  emits: ["unpop"],
+  emits: ["unpop", "modal-expand"],
   watch: {
     "video.playing": "onPlayStateChange",
+    selectedSeason: "test",
   },
   data() {
     return {
@@ -190,6 +225,13 @@ export default {
           this.renderVideo();
         }
       }, 2000),
+      expanded: false,
+      selectedSeason: this.seasons
+        ? this.seasons[0]
+          ? this.seasons[0]
+          : this.seasons[1]
+        : 0,
+      selectedEpisode: 1,
     };
   },
   computed: {
@@ -204,6 +246,13 @@ export default {
     },
     progress() {
       return this.$props.config[7];
+    },
+    seasons() {
+      return this.$props.config[6];
+    },
+    episodes(season) {
+      console.log(JSON.parse(JSON.stringify(this.seasons)).get());
+      return this.seasons;
     },
     certification() {
       const ratings =
@@ -293,7 +342,11 @@ export default {
       );
     },
     getEncodedInfoForEpisode() {
-      const episode = this.selectedEpisode || this.seasons[1].episodes[0];
+      console.log(this.seasons);
+      const episode =
+        this.selectedEpisode || this.seasons
+          ? this.seasons[1].episodes[0]
+          : null;
       return encodeURIComponent(
         btoa([
           this.tmdb_id,
@@ -320,6 +373,9 @@ export default {
     },
   },
   methods: {
+    test() {
+      console.log(this.selectedSeason, this.selectedEpisode);
+    },
     onPlayStateChange() {
       if (this.video.playing) {
         // Fade out the images
@@ -361,17 +417,25 @@ export default {
       return this.video.playing;
     },
     adjustedPopDimensions() {
-      let origin = "center";
+      let origin = `228px 258px 0px`;
 
       let top = this.carddimensions.top - this.carddimensions.height;
+      /*if (top < 70) {
+        top = this.carddimensions.top;
+        origin = "228px top 0px";
+      } else if (top > window.innerHeight - this.carddimensions.height * 2) {
+        top = this.carddimensions.bottom - this.carddimensions.height * 2;
+        origin = "228px bottom 0px";
+      }*/
+
       let left = this.carddimensions.left - this.carddimensions.width / 2;
       if (left < 0) {
         // left pos is under 0
         left = this.carddimensions.left;
-        origin = "left";
+        origin = "left 258px 0px";
       } else if (left > window.innerWidth - this.carddimensions.width * 2) {
         left = this.carddimensions.right - this.carddimensions.width * 2;
-        origin = "right";
+        origin = "right 258px 0px";
       }
       let width = this.carddimensions.width * 2;
 
@@ -383,26 +447,46 @@ export default {
       };
     },
     setDimensions() {
-      const popDims = this.adjustedPopDimensions();
-      this.$refs.elPopover.style.top = `${popDims.top}px`;
-      this.$refs.elPopover.style.left = `${popDims.left}px`;
-      this.$refs.elModal.style.width = `${popDims.width}px`;
-      this.$refs.elModal.style["transform-origin"] = popDims.origin;
+      if (!this.expanded) {
+        const popDims = this.adjustedPopDimensions();
+        //this.$refs.elModal.style.transform = `scaleX(0.5) scaleY(0.5) translateZ(0px) translateY(${popDims.top}px) translateX(${popDims.left}px)`;
+        this.$refs.elModal.classList.remove("faded");
+        this.$refs.elModal.style.top = `${popDims.top}px`;
+        this.$refs.elModal.style.left = `${popDims.left}px`;
+        this.$refs.elModal.style.width = `${popDims.width}px`;
+        this.$refs.elModal.style["transform-origin"] = popDims.origin;
+      } else {
+        this.$refs.elModal.style.top = `${window.scrollY + 70}px`;
+      }
     },
     onMouseEnter() {
       this.mouseLeft = false;
     },
     onMouseLeave() {
       this.mouseLeft = true;
+
+      if (!this.expanded) {
+        this.closeModal();
+      }
+    },
+    closeModal() {
       this.destroyVideoJS();
 
       this.$refs.elModal.classList.remove("popped");
+      this.$refs.elPopover.classList.remove("expanded");
+      this.$refs.elModal.classList.remove("detail-modal");
+      this.$refs.elModal.classList.remove("faded");
+
+      setTimeout(() => this.$refs.elModal.classList.add("faded"), 200);
       setTimeout(() => {
         this.$emit("unpop");
-      }, 200);
+        this.mouseLeft = false;
+        this.expanded = false;
+        document.body.style.overflow = "visible";
+      }, 300);
     },
     onBoxartClick() {
-      //this.$router.push(this.getWatchLink);
+      this.$router.push(this.getWatchLink);
     },
     getVideoData() {
       const videos = this.details.videos.results;
@@ -414,133 +498,63 @@ export default {
 
         this.video.list = validvideos;
 
-        ipcRenderer.once(
-          `yt-get-video-info-${validvideos[0].key}`,
-          (e, ...args) => {
-            const videos = args[0].streamingData;
-
-            if (!videos) {
-              return;
-            }
-
-            let suitable = videos.formats || videos.adaptiveFormats || null;
-            if (suitable) {
-              suitable = suitable.filter(
-                (i) => i.mimeType.indexOf("video/mp4") > -1
-              );
-
-              /**
-               * = ITAG Table =======================
-                  133 	mp4 	video 	240p 	- 	- 	
-                  134 	mp4 	video 	360p 	- 	- 	
-                  135 	mp4 	video 	480p 	- 	- 	
-                  136 	mp4 	video 	720p 	- 	- 	
-                  137 	mp4 	video 	1080p 	- 	- 	
-                  138 	mp4 	video 	2160p60 	- 	- 	
-                  139 	m4a 	audio 	- 	48k 	- 	
-                  140 	m4a 	audio 	- 	128k 	- 	
-                  141 	m4a 	audio 	- 	256k 	- 	
-                  151 	hls 	audio/video 	72p 	- 	- 	
-                  160 	mp4 	video 	144p 	- 	- 	
-                  167 	webm 	video 	360p 	- 	- 	
-                  168 	webm 	video 	480p 	- 	- 	
-                  169 	webm 	video 	1080p 	- 	- 	
-                  171 	webm 	audio 	- 	128k 	- 	
-                  218 	webm 	video 	480p 	- 	- 	
-                  219 	webm 	video 	144p 	- 	- 	
-                  242 	webm 	video 	240p 	- 	- 	
-                  243 	webm 	video 	360p 	- 	- 	
-                  244 	webm 	video 	480p 	- 	- 	
-                  245 	webm 	video 	480p 	- 	- 	
-                  246 	webm 	video 	480p 	- 	- 	
-                  247 	webm 	video 	720p 	- 	- 	
-                  248 	webm 	video 	1080p 	- 	- 	
-                  249 	webm 	audio 	- 	50k 	- 	
-                  250 	webm 	audio 	- 	70k 	- 	
-                  251 	webm 	audio 	- 	160k 	- 	
-                  264 	mp4 	video 	1440p 	- 	- 	
-                  266 	mp4 	video 	2160p60 	- 	- 	
-                  271 	webm 	video 	1440p 	- 	- 	
-                  272 	webm 	video 	4320p 	- 	- 	
-                  278 	webm 	video 	144p 	- 	- 	
-                  298 	mp4 	video 	720p60 	- 	- 	
-                  299 	mp4 	video 	1080p60 	- 	- 	
-                  302 	webm 	video 	720p60 	- 	- 	
-                  303 	webm 	video 	1080p60 	- 	- 	
-                  308 	webm 	video 	1440p60 	- 	- 	
-                  313 	webm 	video 	2160p 	- 	- 	
-                  315 	webm 	video 	2160p60 	- 	- 	
-                  330 	webm 	video 	144p60 	- 	hdr 	
-                  331 	webm 	video 	240p60 	- 	hdr 	
-                  332 	webm 	video 	360p60 	- 	hdr 	
-                  333 	webm 	video 	480p60 	- 	hdr 	
-                  334 	webm 	video 	720p60 	- 	hdr 	
-                  335 	webm 	video 	1080p60 	- 	hdr 	
-                  336 	webm 	video 	1440p60 	- 	hdr 	
-                  337 	webm 	video 	2160p60 	- 	hdr 	
-              */
-
-              // Find a suitable video stream from suitable_formats
-              // arranged in order. Top takes priority.
-              const suitable_formats = [
-                /* ordinary formats */
-                22, // 720p h.264 aac
-                18, // 360p h.264 aac
-
-                /* adaptive formats */
-                136, // 720p    h.264
-                298, // 720p60  h.264 hfr
-                135, // 480p    h.264
-                137, // 1080p   h.264
-                299, // 1080p60 h.264 hfr
-              ];
-
-              let stream = null;
-              suitable_formats.forEach((f) => {
-                if (stream) return;
-
-                const found = suitable.find((i) => i.itag == f);
-                if (found) stream = found;
-              });
-
-              if (stream) {
-                this.video.streamingData = suitable;
-                this.video.streamURL = stream.url;
-              } else {
-                console.log("YouTube", "No suitable video found");
-              }
-            }
-          }
-        );
-        ipcRenderer.send("yt-get-video-info", validvideos[0].key);
+        // TODO
+        //ipcRenderer.send("yt-get-video-info", validvideos[0].key);
       }
     },
     renderVideo() {
-      //this.destroyVideoJS();
-      console.log(this.video);
+      if (!this.expanded) {
+        if (this.$refs.videoplayer) {
+          this.video.videojs = videojs(
+            this.$refs.videoplayer.getAttribute("id"),
+            {
+              autoplay: true,
+              controls: false,
+              loop: false,
+              sources: [
+                {
+                  type: "video/mp4",
+                  src: this.video.streamURL,
+                },
+              ],
+            },
+            () => {
+              // onPlayerReady()
+            }
+          );
 
-      if (this.$refs.videoplayer) {
-        this.video.videojs = videojs(
-          this.$refs.videoplayer.getAttribute("id"),
-          {
-            autoplay: true,
-            controls: false,
-            loop: false,
-            sources: [
-              {
-                type: "video/mp4",
-                src: this.video.streamURL,
-              },
-            ],
-          },
-          () => {
-            // onPlayerReady()
-          }
-        );
-
-        this.video.videojs.on("play", () => (this.video.playing = true));
-        this.video.videojs.on("ended", () => (this.video.playing = false));
+          this.video.videojs.on("play", () => (this.video.playing = true));
+          this.video.videojs.on("ended", () => (this.video.playing = false));
+        }
       }
+    },
+    expandModal() {
+      if (!this.expanded) {
+        this.expanded = true;
+
+        this.$emit("modal-expand");
+        this.setDimensions();
+        document.body.style.overflow = "hidden";
+
+        if (this.$refs.elBoxart) {
+          this.$refs.elBoxart.src = this.$refs.elBoxart.src.replace(
+            "w500",
+            "original"
+          );
+        } else {
+          this.$refs.elFallbackwrapper.style["background-image"] =
+            this.$refs.elFallbackwrapper.style["background-image"].replace(
+              "w500",
+              "original"
+            );
+        }
+
+        this.$refs.elPopover.classList.add("expanded");
+        this.$refs.elModal.classList.add("detail-modal");
+      }
+    },
+    onClickOutside() {
+      this.closeModal();
     },
     destroyVideoJS() {
       // destroy the videojs player if any
@@ -561,6 +575,8 @@ export default {
     setTimeout(() => {
       this.$refs.elModal.classList.add("popped");
     }, 1);
+
+    console.log(this.seasons);
   },
   updated() {
     if (this.$refs) {

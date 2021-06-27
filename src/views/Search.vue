@@ -29,7 +29,7 @@
         </row>
       </div>
 
-      <CardPop v-if="popconfig[0]" :config="popconfig" @unpop="onCardPopoverUnpop($event)" />
+      <CardPop v-if="popconfig[0] == true" :config="popconfig" @unpop="onCardPopoverUnpop($event)" />
     </div>
   </div>
 </template>

@@ -78,7 +78,7 @@ import { CancelToken, axios } from "../api/axios";
 
 import videojs from "video.js";
 
-const { ipcRenderer } = require("electron");
+//const { ipcRenderer } = require("electron");
 const WebTorrent = require("webtorrent-hybrid");
 
 export default {
@@ -206,8 +206,7 @@ export default {
       this.statusText = text;
     },
     goBack() {
-      if (this.$router.options.history.state.back) this.$router.back();
-      else this.$router.push("/browse");
+      this.$router.back();
     },
     fetchSources() {
       this.setStatus("Searching for sources...");
@@ -337,55 +336,7 @@ export default {
       const releaseDate =
         this.details.release_date || this.details.first_air_date;
 
-      ipcRenderer.once(
-        `fanarttv-scrape-${this.details.id || this.mi[0]}`,
-        (e, data) => {
-          var fanartResults = JSON.parse(data);
-
-          fanartResults = fanartResults.filter((m) => {
-            if (m.year > 0) {
-              // if year exists in fanart response
-              return m.year == releaseDate.split("-")[0];
-            }
-          });
-
-          fanartResults = fanartResults.sort((a, b) => {
-            b.imageCount - a.imageCount;
-          });
-
-          // TODO sort the fanartResults array by imageCount (in case of multiple results for year)
-          fanartResults = fanartResults.sort(
-            (a, b) => b.imageCount - a.imageCount
-          );
-
-          // TODO some fanart names are different than the names returned from TMDb
-          // TODO write an algorithm to determine similarity between two title names (thresholded)
-          if (fanartResults[0]) {
-            getFanArt(fanartResults[0].id, this.getMediaType)
-              .then((r) => {
-                this.fanart = r.data;
-              })
-              .catch((e) => {
-                console.error(
-                  "Fanart",
-                  this.id,
-                  fanartResults[0].id,
-                  fanartResults,
-                  e
-                );
-              });
-          }
-        }
-      );
-
-      // Send to ipcMain, which will scrape FanArtTV (bypassing CORS) for the fanart ID
-      ipcRenderer.send(
-        `scrape-fanarttv`,
-        this.details.id || this.mi[0],
-        this.getMediaTitle,
-        releaseDate.split("-")[0] | "",
-        this.getMediaType === "movie" ? 3 : 1
-      );
+      
     },
     fetchDetails() {
       // Decode the `mi` param.
@@ -672,7 +623,7 @@ export default {
                     }
                   });
 
-                  ipcRenderer.send("onVideoPlay");
+                  //ipcRenderer.send("onVideoPlay");
 
                   console.log(this.player);
                 }, 3000); // create suspense... 3 seconds of blackness :)
@@ -714,7 +665,7 @@ export default {
               this.loading = false;
               this.player.play();
 
-              ipcRenderer.send("onVideoPlay");
+              //ipcRenderer.send("onVideoPlay");
             });
           }
         );
@@ -787,7 +738,7 @@ export default {
     this.fetchDetails();
   },
   beforeUnmount() {
-    ipcRenderer.send("onVideoEnd");
+    //ipcRenderer.send("onVideoEnd");
 
     // Cancel all requests
     this.cancelTokens.fanart.cancel("Operation canceled by lifecycle hook.");

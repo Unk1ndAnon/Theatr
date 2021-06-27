@@ -28,7 +28,7 @@ export default {
 
 <style lang="scss" scoped>
 .browse-container {
-  min-height: 1000px;
+  min-height: 100%;
   overflow: hidden;
 }
 </style>

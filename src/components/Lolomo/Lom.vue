@@ -104,7 +104,7 @@ export default {
             requests.push(stringToTMDB(req.function, req.args));
             break;
           case "trakt":
-            requests.push(TraktAPI(req.function, req.args));
+            //requests.push(TraktAPI(req.function, req.args));
             break;
         }
       });

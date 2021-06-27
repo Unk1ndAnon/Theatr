@@ -5,10 +5,10 @@
 </template>
 
 <script>
-import "./Popover.scss";
+import "./Modal.scss";
 
 export default {
-    name: "PopModal",
+    name: "DetailModal",
     props: {
         initiator: { required: true, },
     },

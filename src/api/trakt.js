@@ -1,4 +1,4 @@
-import store from "../store";
+/*import store from "../store";
 import { axios, cache } from "./axios";
 
 const TraktTV = require("trakt.tv");
@@ -50,3 +50,4 @@ export function TraktAPI(func, args = {}) {
 }
 
 export default Trakt;
+*/

@@ -31,13 +31,18 @@ export default {
 </script>
 
 <style lang="scss">
+html {
+  height: 100%;
+}
+
 body {
-  font-family: Avenir, Arial, Helvetica, sans-serif;
+  font-family: Roboto, Arial, Helvetica, sans-serif;
   font-size: 1vw;
   margin: 0;
   padding: 0;
   user-select: none;
   background: #141414;
   color: white;
+  height: inherit;
 }
 </style>
