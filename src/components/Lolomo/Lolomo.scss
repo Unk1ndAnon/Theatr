@@ -1,6 +1,7 @@
 .billboard {
     position: relative;
     display: block;
+    width: 100%;
     z-index: 1;
 
     .billboard-row {
@@ -225,8 +226,14 @@
     top: -12.5vw;
 }
 
+.lolomo-container {
+    width: 100%;
+}
+
 .lom-rowcontainer {
     position: relative;
+    width: 100%;
+    height: 100%;
 
     div.lom-row {
         position: relative;

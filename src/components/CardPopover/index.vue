@@ -117,20 +117,25 @@
                       v-for="genre in details.genres"
                       :key="genre.id"
                     >
-                      <a class="evidence-text" :href="`/${genre.id}`">{{
-                        genre.name
-                      }}</a>
+                      <a
+                        class="evidence-text"
+                        :href="`/browse/genre/${genre.id}`"
+                        >{{ genre.name }}</a
+                      >
                     </li>
                   </ul>
                 </div>
               </div>
 
-              <div v-if="expanded" class="preview-modal--episodeSelector">
+              <div
+                v-if="expanded && media_type == 'tv'"
+                class="preview-modal--episodeSelector"
+              >
                 <div class="episodeSelector-header">
                   <span class="episodeSelector-header-text">Episodes</span>
                   <div class="episodeSelector-dropdown">
                     <select
-                      ref="episodeSelector"
+                      ref="seasonSelector"
                       class="episodeSelector"
                       v-model="selectedSeason"
                     >
@@ -143,15 +148,86 @@
                       </option>
                     </select>
                   </div>
+                </div>
 
-                  <div class="episodeSelector-container" v-if="selectedSeason">
-                    {{ selectedSeason }}
-                    <div
-                      class="episodeCard"
-                      v-for="e in episodes(selectedSeason)"
-                      :key="e.id"
-                    >
-                      {{ e.name }}
+                <div class="episodeSelector-container" v-if="selectedSeason">
+                  <div
+                    :class="`episodeCard ${
+                      e.episode_number == 1 ? 'selected' : ''
+                    } ${currentDate > new Date(e.air_date) ? 'pointer' : ''}`"
+                    v-for="e in episodes"
+                    :key="e.id"
+                  >
+                    <div class="episodeCard-title_index">
+                      {{ e.episode_number }}
+                    </div>
+
+                    <div class="episodeCard-stillWrapper">
+                      <img
+                        v-if="e.still_path"
+                        class="still"
+                        :src="`https://image.tmdb.org/t/p/w200/${e.still_path}`"
+                      />
+                      <img
+                        v-else
+                        class="still-placeholder"
+                        :src="backdrop"
+                        alt=""
+                      />
+                      <div
+                        :class="`episodeCard-playIcon ${
+                          currentDate > new Date(e.air_date) ? '' : 'hidden'
+                        }`"
+                      >
+                        <font-awesome-icon
+                          class="icon"
+                          :icon="icon.play"
+                          size="xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="episodeCard-metadataWrapper">
+                      <div class="episodeCard-title">
+                        <span class="episodeCard-title_text">{{ e.name }}</span>
+                        <span
+                          v-if="currentDate > new Date(e.air_date)"
+                          class="duration"
+                          >{{ details.episode_run_time[0] }}m</span
+                        >
+                        <span v-else class="future-air-date">{{
+                          e.air_date
+                        }}</span>
+                      </div>
+                      <div class="episodeCard-synopsis">{{ e.overview }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                v-if="expanded && similar"
+                class="preview-modal--similar--wrapper"
+              >
+                <p class="preview-modal--similar-header">Similar To This</p>
+
+                <div class="section-container">
+                  <div class="similar--container">
+                    <div class="titleCard--container" v-for="o in similar" :key="o.id">
+                      <div class="titleCard-imagewrapper">
+                        <img :src="`https://image.tmdb.org/t/p/w500/${o.backdrop_path}`" :alt="o.title || o.name" />
+                        <div class="playIcon"></div>
+                        <div class="duration">{{ o.runtime ? o.runtime + "m" : o.number_of_seasons + " Seasons" }}</div>
+                      </div>
+                      <div class="titleCard-metadatawrapper">
+                        <div class="titleMetadata--container">
+                          <div class="titleMetadata">
+
+                          </div>
+                        </div>
+
+                        <div class="titleCard-synopsis">{{ o.overview }}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -176,17 +252,20 @@ import {
   faChevronDown,
 } from "@fortawesome/free-solid-svg-icons";
 
+import { details, similar } from "../../api/tmdb";
 import videojs from "video.js";
 
 /**
 this.$emit("card-popover", [
-  true,
-  this.getAbsoluteDimensions(),
-  this.$props,
-  this.details,
-  this.fanart,
-  this.backdrop,
-  this.seasons,
+  true,                         0
+  this.getAbsoluteDimensions(), 1
+  this.$props,                  2
+  this.details,                 3
+  this.fanart,                  4
+  this.backdrop,                5
+  this.seasons,                 6
+  this.progress,                7
+  this.trakt,                   8
 ]);
  */
 
@@ -207,6 +286,7 @@ export default {
   },
   data() {
     return {
+      similarList: null,
       icon: {
         play: faPlay,
         add: faPlus,
@@ -226,15 +306,15 @@ export default {
         }
       }, 2000),
       expanded: false,
-      selectedSeason: this.seasons
-        ? this.seasons[0]
-          ? this.seasons[0]
-          : this.seasons[1]
-        : 0,
-      selectedEpisode: 1,
+      selectedSeason: null,
+      selectedEpisode: null,
     };
   },
   computed: {
+    currentDate() {
+      const d = new Date();
+      return new Date(`${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`);
+    },
     carddimensions() {
       return this.$props.config[1];
     },
@@ -244,15 +324,25 @@ export default {
     details() {
       return this.$props.config[3];
     },
+    similar() {
+      return this.similarList;
+    },
     progress() {
       return this.$props.config[7];
     },
     seasons() {
       return this.$props.config[6];
     },
-    episodes(season) {
-      console.log(JSON.parse(JSON.stringify(this.seasons)).get());
-      return this.seasons;
+    traktdetails() {
+      return this.$props.config[8];
+    },
+    episodes() {
+      for (const i in this.seasons) {
+        if (this.seasons[i].id == this.selectedSeason) {
+          return this.seasons[i].episodes;
+        }
+      }
+      return null;
     },
     certification() {
       const ratings =
@@ -282,7 +372,7 @@ export default {
       return this.$props.config;
     },
     media_info() {
-      return this.$props.info;
+      return this.$props.config;
     },
     tmdb_id() {
       return this.details.id;
@@ -300,7 +390,7 @@ export default {
       return null;
     },
     media_type() {
-      return this.details.title ? "tv" : "movie";
+      return this.details.title ? "movie" : "tv";
     },
     getOrientation() {
       if (!this.cardprops) return "16x9";
@@ -328,25 +418,28 @@ export default {
     getEncodedInfo() {
       // URL-encoded Base64 array of strings, with forward slashes (/)
       // replaced with periods (.)
+      console.log(this.traktdetails);
+
       return encodeURIComponent(
         btoa([
           this.tmdb_id,
           this.details ? this.details.imdb_id : "",
           this.media_type,
-          encodeURIComponent(this.$props.info.title || this.$props.info.name),
-          this.$props.info.release_date,
-          this.trakt_id,
-          this.trakt_ids.slug,
+          encodeURIComponent(this.details.title || this.details.name),
+          this.details.release_date,
+          this.traktdetails ? this.traktdetails.id : null,
+          this.traktdetails ? this.traktdetails.ids.slug : null,
           this.progress || null,
         ]).replace(/\//g, ".")
       );
     },
     getEncodedInfoForEpisode() {
-      console.log(this.seasons);
-      const episode =
-        this.selectedEpisode || this.seasons
-          ? this.seasons[1].episodes[0]
-          : null;
+      const episode = this.episodes.find(
+        (e) => e.episode_number == this.selectedEpisode
+      );
+      console.log(episode);
+      console.log(this.traktdetails);
+
       return encodeURIComponent(
         btoa([
           this.tmdb_id,
@@ -354,9 +447,9 @@ export default {
           this.media_type,
           encodeURIComponent(episode.name),
           episode.air_date,
-          `s${episode.season_number}:e${episode.episode_number}`,
-          this.trakt_id,
-          this.trakt_ids.slug,
+          `s${this.selectedSeason}:e${this.selectedEpisode}`,
+          this.traktdetails ? this.traktdetails.id : null,
+          this.traktdetails ? this.traktdetails.ids.slug : null,
           this.progress || null,
         ]).replace(/\//g, ".")
       );
@@ -374,7 +467,11 @@ export default {
   },
   methods: {
     test() {
-      console.log(this.selectedSeason, this.selectedEpisode);
+      console.log(
+        this.selectedSeason,
+        this.selectedEpisode,
+        this.$refs.seasonSelector.length
+      );
     },
     onPlayStateChange() {
       if (this.video.playing) {
@@ -457,6 +554,8 @@ export default {
         this.$refs.elModal.style["transform-origin"] = popDims.origin;
       } else {
         this.$refs.elModal.style.top = `${window.scrollY + 70}px`;
+        this.$refs.elModal.style.left = `20%`;
+        this.$refs.elModal.style.width = `60%`;
       }
     },
     onMouseEnter() {
@@ -472,17 +571,19 @@ export default {
     closeModal() {
       this.destroyVideoJS();
 
-      this.$refs.elModal.classList.remove("popped");
-      this.$refs.elPopover.classList.remove("expanded");
-      this.$refs.elModal.classList.remove("detail-modal");
-      this.$refs.elModal.classList.remove("faded");
+      if (this.$refs.elModal) {
+        this.$refs.elModal.style.position = "absolute";
+        this.$refs.elModal.classList.remove("popped");
+        this.$refs.elPopover.classList.remove("expanded");
+        this.$refs.elModal.classList.remove("detail-modal");
+        this.$refs.elModal.classList.remove("faded");
+      }
 
       setTimeout(() => this.$refs.elModal.classList.add("faded"), 200);
       setTimeout(() => {
         this.$emit("unpop");
         this.mouseLeft = false;
         this.expanded = false;
-        document.body.style.overflow = "visible";
       }, 300);
     },
     onBoxartClick() {
@@ -500,6 +601,39 @@ export default {
 
         // TODO
         //ipcRenderer.send("yt-get-video-info", validvideos[0].key);
+      }
+    },
+    getSimilar() {
+      similar(this.details.id, this.media_type)
+        .then((r) => {
+          this.similarList = r.data.results;
+
+          r.data.results.forEach((o, i) => {
+            console.log(i, o);
+            this.getDetailsOfSimilar(i);
+          });
+        })
+        .catch((e) => {
+          // TODO
+          // console.error(e);
+        });
+    },
+    getDetailsOfSimilar(similarIndex) {
+      if (this.similar) {
+        const similarTitle = this.similar[similarIndex];
+        console.log(similarTitle);
+
+        details(similarTitle.id, (similarTitle.title ? "movie" : "tv"), {
+          params: {
+            append_to_response: `images,videos,${similarTitle.title ? "release_dates" : "content_ratings"}`,
+          },
+        }).then((r) => {
+          console.log(similarTitle.title || similarTitle.name, similarTitle, r.data.results);
+          this.similarList[similarIndex] = r.data.results;
+        }).catch((e) => {
+          // TODO
+          console.error(e)
+        })
       }
     },
     renderVideo() {
@@ -531,16 +665,18 @@ export default {
     expandModal() {
       if (!this.expanded) {
         this.expanded = true;
+        this.getSimilar();
 
-        this.$emit("modal-expand");
+        this.$emit("modal-expand", true);
         this.setDimensions();
-        document.body.style.overflow = "hidden";
 
         if (this.$refs.elBoxart) {
-          this.$refs.elBoxart.src = this.$refs.elBoxart.src.replace(
+          /*this.$refs.elBoxart.src = this.$refs.elBoxart.src.replace(
             "w500",
             "original"
-          );
+          );*/
+          this.$refs.elBoxart.src =
+            "https://image.tmdb.org/t/p/original/" + this.details.backdrop_path;
         } else {
           this.$refs.elFallbackwrapper.style["background-image"] =
             this.$refs.elFallbackwrapper.style["background-image"].replace(
@@ -551,10 +687,21 @@ export default {
 
         this.$refs.elPopover.classList.add("expanded");
         this.$refs.elModal.classList.add("detail-modal");
+        //setTimeout(() => this.$refs.elModal.style.position = "sticky", 1000);
+        //document.addEventListener('scroll', (e) => e.preventDefault(), false);
       }
     },
+    collapseModal() {
+      this.$refs.elModal.classList.remove("detail-modal");
+      this.$refs.elPopover.classList.remove("expanded");
+      setTimeout(() => {
+        this.closeModal();
+      }, 200);
+      this.expanded = false;
+      this.$emit("modal-expand", false);
+    },
     onClickOutside() {
-      this.closeModal();
+      this.collapseModal();
     },
     destroyVideoJS() {
       // destroy the videojs player if any
@@ -581,12 +728,15 @@ export default {
   updated() {
     if (this.$refs) {
       //console.log("updated", this.adjustedPopDimensions());
-      this.getVideoData();
-      this.setDimensions();
-      this.render = true;
+      /*this.getVideoData();
+      this.getSimilar(); */
+      
+      /* this.render = true;
       setTimeout(() => {
         this.$refs.elModal.classList.add("popped");
-      }, 1);
+      }, 1);*/
+
+      this.setDimensions();
     }
   },
   beforeUnmount() {

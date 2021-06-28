@@ -191,7 +191,7 @@ export default {
           episode.air_date,
           `s${episode.season_number}:e${episode.episode_number}`,
           this.trakt_id,
-          this.trakt_ids.slug,
+          this.trakt_ids ? this.trakt_ids.slug : null,
           this.progress || null,
         ]).replace(/\//g, ".")
       );
@@ -254,6 +254,7 @@ export default {
           this.backdrop,
           this.seasons,
           this.progress,
+          this.trakt,
         ]);
       }
     },
