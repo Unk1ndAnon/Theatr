@@ -115,7 +115,7 @@ const sectionConfig = {
             MEDIA.Movie,
             {
               params: {
-                with_companies: 429,
+                with_companies: 420,
               },
             },
           ],
@@ -127,7 +127,7 @@ const sectionConfig = {
             MEDIA.Show,
             {
               params: {
-                with_companies: 429,
+                with_companies: 420,
               },
             },
           ],
