@@ -15,6 +15,23 @@
             :src="backdrop"
           />
 
+          <div v-if="expanded" class="preview-modal--boxart-titlewrapper">
+            <div class="boxart-title-container">
+              <img
+                v-if="fanartLogo"
+                :src="fanartLogo"
+                :alt="media_title"
+                class="boxart-title"
+              />
+              <div class="boxart-buttonControls">
+                <button class="btn-play" type="button">
+                  <font-awesome-icon :icon="icon.play" size="md" />
+                  <span class="btn-play_text">Play</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div ref="elVideowrapper" class="video--wrapper hide">
             <div ref="elVideooverlay" class="video--wrapper--overlay hide">
               <h3 ref="elVideooverlayTitle" class="overlay-title">
@@ -213,16 +230,50 @@
 
                 <div class="section-container">
                   <div class="similar--container">
-                    <div class="titleCard--container" v-for="o in similar" :key="o.id">
+                    <div
+                      class="titleCard--container"
+                      v-for="o in similar.slice(0, 9)"
+                      :key="o.id"
+                    >
                       <div class="titleCard-imagewrapper">
-                        <img :src="`https://image.tmdb.org/t/p/w500/${o.backdrop_path}`" :alt="o.title || o.name" />
+                        <img
+                          :src="`https://image.tmdb.org/t/p/w500/${
+                            o.images
+                              ? (o.images.backdrops ? ((o.images.backdrops.filter(
+                                  (i) => i.iso_639_1 == 'en'
+                                )[0]) ? (o.images.backdrops.filter(
+                                          (i) => i.iso_639_1 == 'en'
+                                        )[0].file_path)
+                                      : o.backdrop_path)
+                              : o.backdrop_path) : o.backdrop_path
+                          }`"
+                          :alt="o.title || o.name"
+                        />
                         <div class="playIcon"></div>
-                        <div class="duration">{{ o.runtime ? o.runtime + "m" : o.number_of_seasons + " Seasons" }}</div>
+                        <div class="duration">
+                          {{
+                            o.title
+                              ? `${
+                                  Math.trunc(o.runtime / 60) >= 1
+                                    ? Math.trunc(o.runtime / 60) + "h"
+                                    : ""
+                                } ${
+                                  Math.trunc(o.runtime % 60) >= 1
+                                    ? Math.trunc(o.runtime % 60) + "m"
+                                    : ""
+                                }`
+                              : `${
+                                  o.number_of_seasons +
+                                  " Season" +
+                                  (o.number_of_seasons == 1 ? "" : "s")
+                                }`
+                          }}
+                        </div>
                       </div>
                       <div class="titleCard-metadatawrapper">
                         <div class="titleMetadata--container">
                           <div class="titleMetadata">
-
+                            <b>{{ o.title || o.name }}</b>
                           </div>
                         </div>
 
@@ -244,6 +295,7 @@
 
 <script>
 import "./CardPop.scss";
+import store from "../../store";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
@@ -252,7 +304,7 @@ import {
   faChevronDown,
 } from "@fortawesome/free-solid-svg-icons";
 
-import { details, similar } from "../../api/tmdb";
+import { getDetails, similar } from "../../api/tmdb";
 import videojs from "video.js";
 
 /**
@@ -324,6 +376,15 @@ export default {
     details() {
       return this.$props.config[3];
     },
+    fanart() {
+      return this.$props.config[4];
+    },
+    fanartLogo() {
+      let logos = this.fanart.hdmovielogo || this.fanart.hdtvlogo;
+      if (!logos) return null;
+      logos = logos.filter((o) => o.lang == store.state.ISO639);
+      return logos[0].url;
+    },
     similar() {
       return this.similarList;
     },
@@ -361,9 +422,6 @@ export default {
       return runtime
         ? `${runtime} Minutes`
         : `${numSsns} Season${numSsns > 1 ? "s" : ""}`;
-    },
-    fanart() {
-      return this.$props.config[4];
     },
     backdrop() {
       return this.$props.config[5];
@@ -553,9 +611,9 @@ export default {
         this.$refs.elModal.style.width = `${popDims.width}px`;
         this.$refs.elModal.style["transform-origin"] = popDims.origin;
       } else {
+        this.$refs.elModal.style["transform-origin"] = "bottom center";
         this.$refs.elModal.style.top = `${window.scrollY + 70}px`;
-        this.$refs.elModal.style.left = `20%`;
-        this.$refs.elModal.style.width = `60%`;
+        this.$refs.elModal.style.width = `40%`;
       }
     },
     onMouseEnter() {
@@ -607,6 +665,7 @@ export default {
       similar(this.details.id, this.media_type)
         .then((r) => {
           this.similarList = r.data.results;
+          console.log(this.similarList);
 
           r.data.results.forEach((o, i) => {
             console.log(i, o);
@@ -615,7 +674,7 @@ export default {
         })
         .catch((e) => {
           // TODO
-          // console.error(e);
+          console.error(e);
         });
     },
     getDetailsOfSimilar(similarIndex) {
@@ -623,17 +682,26 @@ export default {
         const similarTitle = this.similar[similarIndex];
         console.log(similarTitle);
 
-        details(similarTitle.id, (similarTitle.title ? "movie" : "tv"), {
+        getDetails(similarTitle.id, similarTitle.title ? "movie" : "tv", {
           params: {
-            append_to_response: `images,videos,${similarTitle.title ? "release_dates" : "content_ratings"}`,
+            append_to_response: `images,videos,${
+              similarTitle.title ? "release_dates" : "content_ratings"
+            }`,
           },
-        }).then((r) => {
-          console.log(similarTitle.title || similarTitle.name, similarTitle, r.data.results);
-          this.similarList[similarIndex] = r.data.results;
-        }).catch((e) => {
-          // TODO
-          console.error(e)
         })
+          .then((r) => {
+            console.log(
+              similarTitle.title || similarTitle.name,
+              similarTitle,
+              r.data
+            );
+
+            this.similarList[similarIndex] = r.data;
+          })
+          .catch((e) => {
+            // TODO
+            console.error(e);
+          });
       }
     },
     renderVideo() {
@@ -671,12 +739,16 @@ export default {
         this.setDimensions();
 
         if (this.$refs.elBoxart) {
-          /*this.$refs.elBoxart.src = this.$refs.elBoxart.src.replace(
-            "w500",
-            "original"
-          );*/
-          this.$refs.elBoxart.src =
-            "https://image.tmdb.org/t/p/original/" + this.details.backdrop_path;
+          if (this.fanartLogo) {
+            this.$refs.elBoxart.src =
+              "https://image.tmdb.org/t/p/original/" +
+              this.details.backdrop_path;
+          } else {
+            this.$refs.elBoxart.src = this.$refs.elBoxart.src.replace(
+              "w500",
+              "original"
+            );
+          }
         } else {
           this.$refs.elFallbackwrapper.style["background-image"] =
             this.$refs.elFallbackwrapper.style["background-image"].replace(
@@ -730,7 +802,7 @@ export default {
       //console.log("updated", this.adjustedPopDimensions());
       /*this.getVideoData();
       this.getSimilar(); */
-      
+
       /* this.render = true;
       setTimeout(() => {
         this.$refs.elModal.classList.add("popped");
