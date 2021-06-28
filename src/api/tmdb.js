@@ -71,7 +71,10 @@ export function movies_now_playing(options = {}) {
 }
 
 export function discover(media_type = MEDIA.Movie, options = {}) {
-  return _api.get(`/discover/${media_type}`, options);
+  return _api.get(`/discover/${media_type}`, {
+    params: Object.assign(options.params || { without_genres: 10763 }), // 10763 = news
+    ...options
+  });
 }
 
 export function trending(time_window = WINDOW.Week, options = {}) {
