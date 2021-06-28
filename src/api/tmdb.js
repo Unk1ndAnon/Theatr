@@ -91,3 +91,10 @@ export function search(query, search = SEARCH.Multi, options = {}) {
     ...options
   });
 }
+
+export function similar(id, media_type = MEDIA.Movie, options = {}) {
+  return _api.get(`/${media_type}/${id}/similar`, {
+    params: Object.assign(options.params || {}),
+    ...options
+  });
+}
