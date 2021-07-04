@@ -1,2 +1,2 @@
 # De-electronified Theatr
-Theatr, without Electron.
+Theatr, on Electron.
