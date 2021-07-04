@@ -61,7 +61,7 @@
 <script>
 import { MEDIA, getDetails } from "../../api/tmdb";
 import { getFanArt } from "../../api/fanart";
-import { ipcRenderer } from "electron";
+//import { ipcRenderer } from "electron";
 
 import videojs from "video.js";
 import "video.js/dist/video-js.css";
@@ -193,57 +193,10 @@ export default {
               })
               .catch(() => {
                 // TODO Scrape
-                const { ipcRenderer } = require("electron");
+                //const { ipcRenderer } = require("electron");
 
                 const releaseDate =
                   this.details.release_date || this.details.first_air_date;
-
-                ipcRenderer.once(`fanarttv-scrape-${this.id}`, (e, data) => {
-                  var fanartResults = JSON.parse(data);
-
-                  fanartResults = fanartResults.filter((m) => {
-                    if (m.year > 0) {
-                      // if year exists in fanart response
-                      return m.year == releaseDate.split("-")[0];
-                    }
-                  });
-
-                  fanartResults = fanartResults.sort((a, b) => {
-                    b.imageCount - a.imageCount;
-                  });
-
-                  // TODO sort the fanartResults array by imageCount (in case of multiple results for year)
-                  fanartResults = fanartResults.sort(
-                    (a, b) => b.imageCount - a.imageCount
-                  );
-
-                  // TODO some fanart names are different than the names returned from TMDb
-                  // TODO write an algorithm to determine similarity between two title names (thresholded)
-                  if (fanartResults[0]) {
-                    getFanArt(fanartResults[0].id, this.getMediaType)
-                      .then((r) => {
-                        this.fanart = r.data;
-                      })
-                      .catch((e) => {
-                        console.error(
-                          "Fanart",
-                          this.id,
-                          fanartResults[0].id,
-                          fanartResults,
-                          e
-                        );
-                      });
-                  }
-                });
-
-                // Send to ipcMain, which will scrape FanArtTV (bypassing CORS) for the fanart ID
-                ipcRenderer.send(
-                  `scrape-fanarttv`,
-                  this.details.id || this.$props.info.id,
-                  this.getMediaTitle,
-                  releaseDate.split("-")[0] | "",
-                  this.getMediaType === "movie" ? 3 : 1
-                );
               });
           }
         });
@@ -278,9 +231,6 @@ export default {
 
         const key = selectedSites[0].key;
 
-        ipcRenderer.once(`yt-get-video-info-${key}`, (e, ...args) => {
-          //this.youtube = args[0].streamingData;
-        });
         //ipcRenderer.send("yt-get-video-info", key);
       }
     },

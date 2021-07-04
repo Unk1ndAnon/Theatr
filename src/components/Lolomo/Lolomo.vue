@@ -1,16 +1,27 @@
 <template>
-  <Billboard v-if="config.billboard" v-bind="config.billboard" />
+  <div>
+    <div ref="lolomoContainer" class="lolomo-container">
+      <Billboard v-if="config.billboard" v-bind="config.billboard" />
 
-  <div :class="`lom-rowcontainer ${config.billboard ? 'with-billboard' : ''}`">
-    <Lom
-      v-for="lom in loadedloms"
-      :key="lom.listName"
-      v-bind="lom"
-      @card-popover="onCardPopover($event)"
+      <div
+        ref="rowcontainer"
+        :class="`lom-rowcontainer ${config.billboard ? 'with-billboard' : ''}`"
+      >
+        <Lom
+          v-for="lom in loadedloms"
+          :key="lom.listName"
+          v-bind="lom"
+          @card-popover="onCardPopover($event)"
+        />
+      </div>
+    </div>
+    <CardPop
+      v-if="popconfig[0]"
+      :config="popconfig"
+      @unpop="onCardPopoverUnpop($event)"
+      @modal-expand="handleModal($event)"
     />
   </div>
-
-  <CardPop v-if="popconfig[0]" :config="popconfig" @unpop="onCardPopoverUnpop($event)" />
 </template>
 
 <script>
@@ -29,7 +40,7 @@ export default {
     },
   },
   watch: {
-    "isatbottom"(to, from) {
+    isatbottom(to, from) {
       if (to == true) {
         this.userScrolledToBottom();
       }
@@ -49,6 +60,15 @@ export default {
     },
     onCardPopoverUnpop(e) {
       this.popconfig = [false];
+      this.$refs.lolomoContainer.style.position = "relative";
+    },
+    handleModal(expanded) {
+      console.log(expanded);
+      if (expanded) {
+        this.$refs.lolomoContainer.style.position = "fixed";
+      } else {
+        this.$refs.lolomoContainer.style.position = "relative";
+      }
     },
     setConfig() {
       this.config = this.getSectionExports(this.getSection);
@@ -70,7 +90,10 @@ export default {
     },
     onScroll() {
       //console.log(window.innerHeight, window.pageYOffset, document.body.offsetHeight);
-      if (window.innerHeight + window.pageYOffset >= (document.body.offsetHeight - 64)) {
+      if (
+        window.innerHeight + window.pageYOffset >=
+        document.body.offsetHeight - 64
+      ) {
         this.isatbottom = true;
       } else {
         this.isatbottom = false;
@@ -78,7 +101,7 @@ export default {
     },
     userScrolledToBottom() {
       this.load(this.loadedloms.length, this.loadedloms.length + 3);
-    }
+    },
   },
   computed: {
     getSection() {

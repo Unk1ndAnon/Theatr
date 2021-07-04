@@ -175,7 +175,7 @@ export default {
           encodeURIComponent(this.$props.info.title || this.$props.info.name),
           this.$props.info.release_date,
           this.trakt_id,
-          this.trakt_ids.slug,
+          this.trakt_ids ? this.trakt_ids.slug : null,
           this.progress || null,
         ]).replace(/\//g, ".")
       );
@@ -191,7 +191,7 @@ export default {
           episode.air_date,
           `s${episode.season_number}:e${episode.episode_number}`,
           this.trakt_id,
-          this.trakt_ids.slug,
+          this.trakt_ids ? this.trakt_ids.slug : null,
           this.progress || null,
         ]).replace(/\//g, ".")
       );
@@ -254,6 +254,7 @@ export default {
           this.backdrop,
           this.seasons,
           this.progress,
+          this.trakt,
         ]);
       }
     },
@@ -265,7 +266,7 @@ export default {
       if (this.$props.info.progress) this.progress = this.$props.info.progress;
 
       if (!this.is_trakt) {
-        Trakt.search
+        /*Trakt.search
           .id({
             id: this.tmdb_id,
             id_type: "tmdb",
@@ -273,7 +274,7 @@ export default {
           })
           .then((r) => {
             this.trakt = r.data[0];
-          });
+          });*/
       }
 
       getDetails(this.tmdb_id, this.media_type, {
@@ -394,6 +395,7 @@ a {
 }
 
 .boxart {
+  box-shadow: rgba(0, 0, 0, 0.75) 0px 3px 10px;
   position: relative;
   width: 100%;
   height: 0;
@@ -476,13 +478,14 @@ img.boxart-image {
   right: 0;
   bottom: 0;
   width: 100%;
+  height: 100%;
   z-index: -1;
 
   .fallback-text {
     box-sizing: border-box;
     position: absolute;
     width: 90%;
-    padding: 0 0 10%;
+    padding: 0 0 0;
     bottom: 0;
     left: 5;
     right: 5%;

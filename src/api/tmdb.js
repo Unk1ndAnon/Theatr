@@ -71,7 +71,10 @@ export function movies_now_playing(options = {}) {
 }
 
 export function discover(media_type = MEDIA.Movie, options = {}) {
-  return _api.get(`/discover/${media_type}`, options);
+  return _api.get(`/discover/${media_type}`, {
+    params: Object.assign(options.params || { without_genres: 10763 }), // 10763 = news
+    ...options
+  });
 }
 
 export function trending(time_window = WINDOW.Week, options = {}) {
@@ -88,6 +91,13 @@ export function on_the_air(options = {}) {
 export function search(query, search = SEARCH.Multi, options = {}) {
   return _api.get(`/search/${search}`, {
     params: Object.assign(options.params || {}, { query: query }),
+    ...options
+  });
+}
+
+export function similar(id, media_type = MEDIA.Movie, options = {}) {
+  return _api.get(`/${media_type}/${id}/similar`, {
+    params: Object.assign(options.params || {}),
     ...options
   });
 }

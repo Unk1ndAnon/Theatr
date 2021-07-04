@@ -4,6 +4,7 @@
     <div class="browse-container" v-if="searchresults.length > 0">
       <div class="search-wrapper">
         <row
+          class="row"
           container
           v-for="row in range(
             1,
@@ -13,6 +14,7 @@
           :gutter="breakpoints[breakpoint].gutter"
         >
           <column
+            class="column"
             v-for="col in range(1, breakpoints[breakpoint].columns)"
             :key="col"
           >
@@ -29,7 +31,7 @@
         </row>
       </div>
 
-      <CardPop v-if="popconfig[0]" :config="popconfig" @unpop="onCardPopoverUnpop($event)" />
+      <CardPop v-if="popconfig[0] == true" :config="popconfig" @unpop="onCardPopoverUnpop($event)" />
     </div>
   </div>
 </template>
@@ -197,9 +199,14 @@ export default {
   position: relative;
   margin-top: 70px;
   z-index: 0;
+  width: 100%;
 
   .search-wrapper {
     margin: 1%;
+
+    .row {
+      margin-bottom: 2em;
+    }
   }
 }
 </style>
