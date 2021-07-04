@@ -162,7 +162,7 @@ div.popover-wrapper {
         z-index: 8;
 
         transform: scaleX(0.5) scaleY(0.5) translateX(0) translateY(0) translateZ(0);
-        transform-origin: center;
+        //transform-origin: center;
         transition: all .3s;
 
         font-size: 14px;

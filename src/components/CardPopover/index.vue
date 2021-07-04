@@ -572,7 +572,7 @@ export default {
       return this.video.playing;
     },
     adjustedPopDimensions() {
-      let origin = `228px 258px 0px`;
+      let origin = `${this.carddimensions.width}px ${this.carddimensions.height * 2}px`;
 
       let top = this.carddimensions.top - this.carddimensions.height;
       /*if (top < 70) {
@@ -587,10 +587,10 @@ export default {
       if (left < 0) {
         // left pos is under 0
         left = this.carddimensions.left;
-        origin = "left 258px 0px";
+        origin = `left ${this.carddimensions.height * 2}px`;
       } else if (left > window.innerWidth - this.carddimensions.width * 2) {
         left = this.carddimensions.right - this.carddimensions.width * 2;
-        origin = "right 258px 0px";
+        origin = `right ${this.carddimensions.height * 2}px`;
       }
       let width = this.carddimensions.width * 2;
 
