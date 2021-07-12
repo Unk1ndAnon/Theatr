@@ -296,6 +296,7 @@
 <script>
 import "./CardPop.scss";
 import store from "../../store";
+import { ipcRenderer } from "electron";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
@@ -657,8 +658,102 @@ export default {
 
         this.video.list = validvideos;
 
-        // TODO
-        //ipcRenderer.send("yt-get-video-info", validvideos[0].key);
+        ipcRenderer.once(`yt-get-video-info-${validvideos[0].key}`, (e, ...args) => {
+          const videos = args[0].streamingData;
+
+            if (!videos) {
+              return;
+            }
+
+            let suitable = videos.formats || videos.adaptiveFormats || null;
+            if (suitable) {
+              suitable = suitable.filter(
+                (i) => i.mimeType.indexOf("video/mp4") > -1
+              );
+
+              /**
+               * = ITAG Table =======================
+                  133 	mp4 	video 	240p 	- 	- 	
+                  134 	mp4 	video 	360p 	- 	- 	
+                  135 	mp4 	video 	480p 	- 	- 	
+                  136 	mp4 	video 	720p 	- 	- 	
+                  137 	mp4 	video 	1080p 	- 	- 	
+                  138 	mp4 	video 	2160p60 	- 	- 	
+                  139 	m4a 	audio 	- 	48k 	- 	
+                  140 	m4a 	audio 	- 	128k 	- 	
+                  141 	m4a 	audio 	- 	256k 	- 	
+                  151 	hls 	audio/video 	72p 	- 	- 	
+                  160 	mp4 	video 	144p 	- 	- 	
+                  167 	webm 	video 	360p 	- 	- 	
+                  168 	webm 	video 	480p 	- 	- 	
+                  169 	webm 	video 	1080p 	- 	- 	
+                  171 	webm 	audio 	- 	128k 	- 	
+                  218 	webm 	video 	480p 	- 	- 	
+                  219 	webm 	video 	144p 	- 	- 	
+                  242 	webm 	video 	240p 	- 	- 	
+                  243 	webm 	video 	360p 	- 	- 	
+                  244 	webm 	video 	480p 	- 	- 	
+                  245 	webm 	video 	480p 	- 	- 	
+                  246 	webm 	video 	480p 	- 	- 	
+                  247 	webm 	video 	720p 	- 	- 	
+                  248 	webm 	video 	1080p 	- 	- 	
+                  249 	webm 	audio 	- 	50k 	- 	
+                  250 	webm 	audio 	- 	70k 	- 	
+                  251 	webm 	audio 	- 	160k 	- 	
+                  264 	mp4 	video 	1440p 	- 	- 	
+                  266 	mp4 	video 	2160p60 	- 	- 	
+                  271 	webm 	video 	1440p 	- 	- 	
+                  272 	webm 	video 	4320p 	- 	- 	
+                  278 	webm 	video 	144p 	- 	- 	
+                  298 	mp4 	video 	720p60 	- 	- 	
+                  299 	mp4 	video 	1080p60 	- 	- 	
+                  302 	webm 	video 	720p60 	- 	- 	
+                  303 	webm 	video 	1080p60 	- 	- 	
+                  308 	webm 	video 	1440p60 	- 	- 	
+                  313 	webm 	video 	2160p 	- 	- 	
+                  315 	webm 	video 	2160p60 	- 	- 	
+                  330 	webm 	video 	144p60 	- 	hdr 	
+                  331 	webm 	video 	240p60 	- 	hdr 	
+                  332 	webm 	video 	360p60 	- 	hdr 	
+                  333 	webm 	video 	480p60 	- 	hdr 	
+                  334 	webm 	video 	720p60 	- 	hdr 	
+                  335 	webm 	video 	1080p60 	- 	hdr 	
+                  336 	webm 	video 	1440p60 	- 	hdr 	
+                  337 	webm 	video 	2160p60 	- 	hdr 	
+              */
+
+              // Find a suitable video stream from suitable_formats
+              // arranged in order. Top takes priority.
+              const suitable_formats = [
+                /* ordinary formats */
+                22, // 720p h.264 aac
+                18, // 360p h.264 aac
+
+                /* adaptive formats */
+                136, // 720p    h.264
+                298, // 720p60  h.264 hfr
+                135, // 480p    h.264
+                137, // 1080p   h.264
+                299, // 1080p60 h.264 hfr
+              ];
+
+              let stream = null;
+              suitable_formats.forEach((f) => {
+                if (stream) return;
+
+                const found = suitable.find((i) => i.itag == f);
+                if (found) stream = found;
+              });
+
+              if (stream) {
+                this.video.streamingData = suitable;
+                this.video.streamURL = stream.url;
+              } else {
+                console.log("YouTube", "No suitable video found");
+              }
+            }
+        });
+        ipcRenderer.send("yt-get-video-info", validvideos[0].key);
       }
     },
     getSimilar() {

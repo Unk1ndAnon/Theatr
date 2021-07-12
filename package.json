@@ -7,10 +7,10 @@
     "build/icon.*"
   ],
   "scripts": {
-    "start": "vue-cli-service serve",
-    "build": "vue-cli-service build"
+    "start": "vue-cli-service electron:serve",
+    "build": "vue-cli-service electron:build"
   },
-  "main": "src/main.js",
+  "main": "background.js",
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^1.2.35",
     "@fortawesome/free-regular-svg-icons": "^5.15.3",
@@ -48,6 +48,8 @@
     "@vue/compiler-sfc": "^3.1.1",
     "@vue/eslint-config-prettier": "^6.0.0",
     "babel-eslint": "^10.1.0",
+    "electron": "^13.1.5",
+    "electron-devtools-installer": "^3.2.0",
     "eslint": "^6.7.2",
     "eslint-plugin-prettier": "^3.3.1",
     "eslint-plugin-vue": "^7.0.0-alpha.0",
@@ -56,6 +58,7 @@
     "sass-loader": "^10.0.5",
     "sentry-testkit": "^3.3.4",
     "video.js": "^7.11.8",
+    "vue-cli-plugin-electron-builder": "^2.1.1",
     "vue-svg-loader": "^0.17.0-beta.2",
     "vue-template-compiler": "^2.6.0-beta.3"
   },
